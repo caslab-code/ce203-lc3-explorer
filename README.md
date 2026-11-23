@@ -11,7 +11,7 @@ You do not need to download a file to use this link.
 
 > **Note:** Before the page opens, githack shows a warning page with the title "One more step". The warning tells you that githack does not review the content of the page. This is normal. Click **Open the page** to continue.
 
-![LC-3 Explorer. The source panel is on the left, the assembly panel is in the center, and the machine panel is on the right. The program is at step 9.](docs/screenshot.png)
+![LC-3 Explorer. The source panel is on the left. The assembly panel is in the center and shows the ISA tab. The machine panel is on the right. The program is at step 9.](docs/screenshot.png)
 
 ## Function
 
