@@ -69,20 +69,21 @@ This panel simulates the LC-3 computer. It shows the state of the computer at ea
 
 1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html
 2. A warning page with the title "One more step" opens. Click **Open the page**.
-3. Go to step 3 below.
+3. Do the steps in "Use the page" below.
 
 ### Run the page from a downloaded file
 
 1. Download the file `lc3-explorer.html`.
 2. Open the file in a web browser.
+3. Do the steps in "Use the page" below.
 
 ### Use the page
 
-3. Write your LC-3 program in the source panel. You can also select a program from the **Examples** menu.
-4. Make sure that the program has no errors.
-5. Push the **Play** button in the machine panel to run the program.
-6. Push the **Step** button to execute one instruction.
-7. Look at the registers and the memory to see the changes.
+1. Write your LC-3 program in the source panel. You can also select a program from the **Examples** menu.
+2. Make sure that the program has no errors.
+3. Push the **Play** button in the machine panel to run the program.
+4. Push the **Step** button to execute one instruction.
+5. Look at the registers and the memory to see the changes.
 
 The downloaded file does not need a server or an internet connection.
 
