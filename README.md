@@ -110,8 +110,9 @@ These shortcuts operate the machine panel. They do not operate when you type in 
 
 The code was developed with Claude AI.
 
-## Use of the code
+## License
 
-The code has no license.
-Anybody can use, copy, change, and share the code for any purpose.
+The code is in the public domain. The license is [The Unlicense](LICENSE).
+Anybody can use, copy, change, sell, and share the code for any purpose.
+You do not need to ask for permission or give credit.
 The code has no warranty.
