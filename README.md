@@ -5,7 +5,7 @@ The page assembles your LC-3 program into machine code.
 The page also simulates the LC-3 computer.
 During the simulation, the page shows each change to the memory and to the registers.
 
-**Open the page in your browser:** [LC-3 Explorer](https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/5d03767c61934dac0b9aba1d1e3f17de545a39aa/lc3-explorer.html)
+**Open the page in your browser:** [LC-3 Explorer](https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/c5315e7c50a0e40b5cf389e0de467be2b4006a73/lc3-explorer.html)
 
 You do not need to download a file to use this link.
 
@@ -68,7 +68,7 @@ This panel simulates the LC-3 computer. It shows the state of the computer at ea
 
 ### Run the page without a download
 
-1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/5d03767c61934dac0b9aba1d1e3f17de545a39aa/lc3-explorer.html
+1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/c5315e7c50a0e40b5cf389e0de467be2b4006a73/lc3-explorer.html
 2. A warning page with the title "One more step" opens. Click **Open the page**.
 3. Do the steps in "Use the page" below.
 
