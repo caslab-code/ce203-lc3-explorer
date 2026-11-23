@@ -5,7 +5,7 @@ The page assembles your LC-3 program into machine code.
 The page also simulates the LC-3 computer.
 During the simulation, the page shows each change to the memory and to the registers.
 
-**Open the page in your browser:** [LC-3 Explorer](https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html)
+**Open the page in your browser:** [LC-3 Explorer](https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/5d03767c61934dac0b9aba1d1e3f17de545a39aa/lc3-explorer.html)
 
 You do not need to download a file to use this link.
 
@@ -38,11 +38,12 @@ You write your LC-3 assembly program in this panel.
 
 ### 2. Assembly panel (center)
 
-This panel shows the result of the assembly. The panel has three tabs:
+This panel shows the result of the assembly. The panel has four tabs:
 
 - **Memory**: This tab shows each memory address and its 16-bit value. The value is in hexadecimal and in binary. Colors show the fields of each instruction, for example the opcode, the registers, and the offset. Put the mouse pointer on the binary value to see a description of each field.
 - **Symbols**: This tab shows each label and its address.
 - **Output**: This tab lets you download the program as `.obj`, `.hex`, `.bin`, and `.sym` files.
+- **ISA**: This tab shows a reference of all LC-3 instructions. For each instruction, the tab shows the opcode and the 16-bit encoding with each field. The tab also shows the syntax, the operation, and the instructions that set the condition codes. A table shows the TRAP service routines.
 
 When you click a line in the source panel, the related memory words get a highlight. When you click a memory word, the related source line gets a highlight.
 
@@ -67,7 +68,7 @@ This panel simulates the LC-3 computer. It shows the state of the computer at ea
 
 ### Run the page without a download
 
-1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html
+1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/5d03767c61934dac0b9aba1d1e3f17de545a39aa/lc3-explorer.html
 2. A warning page with the title "One more step" opens. Click **Open the page**.
 3. Do the steps in "Use the page" below.
 
