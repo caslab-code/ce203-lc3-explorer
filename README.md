@@ -9,6 +9,8 @@ During the simulation, the page shows each change to the memory and to the regis
 
 You do not need to download a file to use this link.
 
+> **Note:** Before the page opens, githack shows a warning page with the title "One more step". The warning tells you that githack does not review the content of the page. This is normal. Click **Open the page** to continue.
+
 ![LC-3 Explorer. The source panel is on the left, the assembly panel is in the center, and the machine panel is on the right. The program is at step 9.](docs/screenshot.png)
 
 ## Function
@@ -66,7 +68,8 @@ This panel simulates the LC-3 computer. It shows the state of the computer at ea
 ### Run the page without a download
 
 1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html
-2. Go to step 3 below.
+2. A warning page with the title "One more step" opens. Click **Open the page**.
+3. Go to step 3 below.
 
 ### Run the page from a downloaded file
 
