@@ -113,7 +113,7 @@ The code was developed with Claude AI.
 
 ## License
 
-The code is in the public domain. The license is [The Unlicense](LICENSE).
-Anybody can use, copy, change, sell, and share the code for any purpose.
-You do not need to ask for permission or give credit.
-The code has no warranty.
+The code has no license.
+Claude AI generated the code.
+The licensing status of code that AI generates is not clear.
+The code is provided "as is", without warranty of any kind.
