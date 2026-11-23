@@ -218,6 +218,43 @@ table.sym tr:hover td { background: var(--panel-2); }
 #tip td { padding: 1px 8px 1px 0; }
 #tip .h { font-weight: 650; margin-bottom: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 
+/* ---------- ISA reference ---------- */
+.isa { padding: 14px 16px 20px; }
+.isa h2 { font-size: 15px; margin: 0 0 4px; }
+.isa p.sub { margin: 0 0 14px; color: var(--muted); font-size: 12.5px; }
+.isa-cols { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.isa-col { flex: 1 1 430px; min-width: 0; }
+.isa-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); column-gap: 10px; align-items: center; margin-bottom: 10px; }
+.isa-row .mn { font: 650 14px ui-monospace, Menlo, Consolas, monospace; color: var(--s-op); text-align: right; }
+.isa-row .mn.dim { color: var(--muted); font-weight: 500; font-size: 12px; }
+.isa-bits { display: grid; grid-template-columns: repeat(16, 1fr); font: 10.5px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); text-align: center; margin: 0 0 3px 72px; }
+.enc {
+  position: relative; display: grid; grid-template-columns: repeat(16, 1fr); height: 34px;
+  border: 1.5px solid var(--text); background: var(--panel); font-size: 12.5px;
+}
+.enc::before, .enc::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 5px; pointer-events: none;
+  background: repeating-linear-gradient(to right, transparent 0, transparent calc(100% / 16 - 1px), var(--muted) calc(100% / 16 - 1px), var(--muted) calc(100% / 16));
+}
+.enc::before { top: 0; }
+.enc::after { bottom: 0; }
+.enc span { display: flex; align-items: center; justify-content: center; border-left: 1.5px solid var(--text); white-space: nowrap; overflow: hidden; min-width: 0; }
+.enc span:first-child { border-left: 0; }
+.enc span.f-op { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.enc span.f-zero, .enc span.fx { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.enc span.fx { color: var(--f-flag); font-weight: 650; }
+.enc.reserved span + span { background: repeating-linear-gradient(135deg, transparent 0 6px, var(--panel-2) 6px 12px); }
+.isa-row .desc { grid-column: 2; font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.isa-row .desc .syn { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--text); }
+.isa-row .desc .op { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.isa-row .desc .cc { color: var(--f-flag); font-weight: 600; }
+.isa h3 { font-size: 13.5px; margin: 18px 0 6px; }
+.isa table.sym { min-width: 0; }
+.isa table.sym tr { cursor: default; }
+.isa .notes { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 12.5px; }
+.isa .notes li { margin: 2px 0; }
+.isa .notes code { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--text); }
+
 /* ---------- footer ---------- */
 footer {
   flex: 0 0 auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;
@@ -357,6 +394,7 @@ table.mem tr.row.exec td:first-child { box-shadow: inset 3px 0 0 var(--exec); }
       <button class="tab on" data-view="vMem">Memory</button>
       <button class="tab" data-view="vSym">Symbols</button>
       <button class="tab" data-view="vOut">Output</button>
+      <button class="tab" data-view="vRef" title="LC-3 instruction set reference">ISA</button>
       <span class="spacer"></span>
       <label class="chk hide-sm"><input type="checkbox" id="optBin" checked> Binary</label>
       <label class="chk hide-sm"><input type="checkbox" id="optDec"> Decimal</label>
@@ -364,6 +402,7 @@ table.mem tr.row.exec td:first-child { box-shadow: inset 3px 0 0 var(--exec); }
     <div class="view" id="vMem"></div>
     <div class="view" id="vSym" hidden></div>
     <div class="view" id="vOut" hidden></div>
+    <div class="view" id="vRef" hidden></div>
     <div class="legend" id="legend">
       <span><b class="f-op">opcode</b></span><span><b class="f-reg">register</b></span><span><b class="f-imm">imm / trapvect</b></span>
       <span><b class="f-off">PC/base offset</b></span><span><b class="f-flag">flag / nzp</b></span><span><b class="f-zero">fixed</b></span><span><b class="f-data">data</b></span>
@@ -1084,7 +1123,7 @@ if (typeof module !== "undefined") module.exports = LC3;
 
   var $ = function (id) { return document.getElementById(id); };
   var src = $("src"), code = $("code"), gutter = $("gutter"), diagEl = $("diag");
-  var vMem = $("vMem"), vSym = $("vSym"), vOut = $("vOut");
+  var vMem = $("vMem"), vSym = $("vSym"), vOut = $("vOut"), vRef = $("vRef");
   var statusEl = $("status"), tip = $("tip");
   var result = null, hlLine = -1;
 
@@ -1124,8 +1163,8 @@ if (typeof module !== "undefined") module.exports = LC3;
   document.querySelectorAll("#right .tab").forEach(function (t) {
     t.onclick = function () {
       document.querySelectorAll("#right .tab").forEach(function (x) { x.classList.toggle("on", x === t); });
-      [vMem, vSym, vOut].forEach(function (v) { v.hidden = v.id !== t.dataset.view; });
-      $("legend").style.display = t.dataset.view === "vMem" ? "" : "none";
+      [vMem, vSym, vOut, vRef].forEach(function (v) { v.hidden = v.id !== t.dataset.view; });
+      $("legend").style.display = t.dataset.view === "vMem" || t.dataset.view === "vRef" ? "" : "none";
     };
   });
 
@@ -1757,6 +1796,60 @@ if (typeof module !== "undefined") module.exports = LC3;
     try { history.replaceState(null, "", url); } catch (e) {}
     copy(url, $("btnShare"));
   };
+
+  // ---------- ISA reference (static) ----------
+  // fields: [text, class, width]; class "fx" = fixed mode/flag bit, "f-*" = bit-field colour
+  var ISA_L = [
+    ["ADD", "ADD DR, SR1, SR2", "DR ← SR1 + SR2", 1, [["0001", "op", 4], ["DR", "reg", 3], ["SR1", "reg", 3], ["0", "fx", 1], ["00", "zero", 2], ["SR2", "reg", 3]]],
+    ["ADD", "ADD DR, SR1, #imm5", "DR ← SR1 + SEXT(imm5)", 1, [["0001", "op", 4], ["DR", "reg", 3], ["SR1", "reg", 3], ["1", "fx", 1], ["imm5", "imm", 5]]],
+    ["AND", "AND DR, SR1, SR2", "DR ← SR1 AND SR2", 1, [["0101", "op", 4], ["DR", "reg", 3], ["SR1", "reg", 3], ["0", "fx", 1], ["00", "zero", 2], ["SR2", "reg", 3]]],
+    ["AND", "AND DR, SR1, #imm5", "DR ← SR1 AND SEXT(imm5)", 1, [["0101", "op", 4], ["DR", "reg", 3], ["SR1", "reg", 3], ["1", "fx", 1], ["imm5", "imm", 5]]],
+    ["NOT", "NOT DR, SR", "DR ← NOT(SR)", 1, [["1001", "op", 4], ["DR", "reg", 3], ["SR", "reg", 3], ["111111", "zero", 6]]],
+    ["BR", "BRnzp LABEL", "if (n·N + z·Z + p·P) PC ← PC + SEXT(PCoffset9)", 0, [["0000", "op", 4], ["n", "flag", 1], ["z", "flag", 1], ["p", "flag", 1], ["PCoffset9", "off", 9]]],
+    ["JMP", "JMP BaseR", "PC ← BaseR", 0, [["1100", "op", 4], ["000", "zero", 3], ["BaseR", "reg", 3], ["000000", "zero", 6]]],
+    ["JSR", "JSR LABEL", "R7 ← PC; PC ← PC + SEXT(PCoffset11)", 0, [["0100", "op", 4], ["1", "fx", 1], ["PCoffset11", "off", 11]]],
+    ["JSRR", "JSRR BaseR", "R7 ← PC; PC ← BaseR", 0, [["0100", "op", 4], ["0", "fx", 1], ["00", "zero", 2], ["BaseR", "reg", 3], ["000000", "zero", 6]]],
+    ["RET", "RET", "PC ← R7  (= JMP R7)", 0, [["1100", "op", 4], ["000", "zero", 3], ["111", "fx", 3], ["000000", "zero", 6]]]
+  ];
+  var ISA_R = [
+    ["LD", "LD DR, LABEL", "DR ← M[PC + SEXT(PCoffset9)]", 1, [["0010", "op", 4], ["DR", "reg", 3], ["PCoffset9", "off", 9]]],
+    ["LDI", "LDI DR, LABEL", "DR ← M[M[PC + SEXT(PCoffset9)]]", 1, [["1010", "op", 4], ["DR", "reg", 3], ["PCoffset9", "off", 9]]],
+    ["LDR", "LDR DR, BaseR, #off6", "DR ← M[BaseR + SEXT(offset6)]", 1, [["0110", "op", 4], ["DR", "reg", 3], ["BaseR", "reg", 3], ["offset6", "off", 6]]],
+    ["LEA", "LEA DR, LABEL", "DR ← PC + SEXT(PCoffset9)", 0, [["1110", "op", 4], ["DR", "reg", 3], ["PCoffset9", "off", 9]]],
+    ["ST", "ST SR, LABEL", "M[PC + SEXT(PCoffset9)] ← SR", 0, [["0011", "op", 4], ["SR", "reg", 3], ["PCoffset9", "off", 9]]],
+    ["STI", "STI SR, LABEL", "M[M[PC + SEXT(PCoffset9)]] ← SR", 0, [["1011", "op", 4], ["SR", "reg", 3], ["PCoffset9", "off", 9]]],
+    ["STR", "STR SR, BaseR, #off6", "M[BaseR + SEXT(offset6)] ← SR", 0, [["0111", "op", 4], ["SR", "reg", 3], ["BaseR", "reg", 3], ["offset6", "off", 6]]],
+    ["TRAP", "TRAP trapvect8", "R7 ← PC; PC ← M[ZEXT(trapvect8)]", 0, [["1111", "op", 4], ["0000", "zero", 4], ["trapvect8", "imm", 8]]],
+    ["RTI", "RTI", "PC ← M[R6]; PSR ← M[R6+1]  (supervisor mode only)", 0, [["1000", "op", 4], ["000000000000", "zero", 12]]],
+    ["reserved", "", "illegal opcode exception", 0, [["1101", "op", 4], ["", "zero", 12]]]
+  ];
+  function renderISA() {
+    var bits = '<div class="isa-bits">' + Array.from({ length: 16 }, function (_, i) { return "<span>" + (15 - i) + "</span>"; }).join("") + "</div>";
+    function col(list) {
+      return '<div class="isa-col">' + bits + list.map(function (r) {
+        var enc = r[4].map(function (f) {
+          var cls = f[1] === "fx" ? "fx" : "f-" + f[1];
+          return '<span class="' + cls + '" style="grid-column:span ' + f[2] + '">' + esc(f[0]) + "</span>";
+        }).join("");
+        var reserved = r[0] === "reserved";
+        return '<div class="isa-row"><span class="mn' + (reserved ? " dim" : "") + '">' + r[0] + '</span><div class="enc' + (reserved ? " reserved" : "") + '">' + enc + "</div>" +
+          '<div class="desc">' + (r[1] ? '<span class="syn">' + esc(r[1]) + "</span>" : "") + '<span class="op">' + esc(r[2]) + "</span>" + (r[3] ? '<span class="cc">sets CC</span>' : "") + "</div></div>";
+      }).join("") + "</div>";
+    }
+    var traps = [["x20", "GETC", "Read one character from the keyboard into R0 (no echo)"], ["x21", "OUT", "Write the character in R0[7:0] to the console"],
+      ["x22", "PUTS", "Write the string at address R0, one character per word, until x0000"], ["x23", "IN", "Print a prompt, read one character, echo it, put it in R0"],
+      ["x24", "PUTSP", "Write the string at address R0, two characters per word (low byte first)"], ["x25", "HALT", "Stop the program"]];
+    vRef.innerHTML = '<div class="isa"><h2>LC-3 instruction set</h2><p class="sub">16-bit encodings, bit 15 on the left. Colours match the Memory tab.</p>' +
+      '<div class="isa-cols">' + col(ISA_L) + col(ISA_R) + "</div>" +
+      '<ul class="notes"><li><code>PC</code> is the incremented PC (the address of the instruction + 1).</li>' +
+      "<li><code>SEXT</code> sign-extends a field to 16 bits; <code>ZEXT</code> zero-extends it.</li>" +
+      "<li><b>sets CC</b>: the instruction sets the condition codes N, Z, P from the value written to DR. (LEA also sets them in the 2nd edition of the textbook, but not in the 3rd edition or in this simulator.)</li>" +
+      "<li><code>BR</code> with no letters means <code>BRnzp</code> (always branch).</li></ul>" +
+      '<h3>TRAP service routines</h3><table class="sym"><thead><tr><th>Vector</th><th>Name</th><th>Action</th></tr></thead><tbody>' +
+      traps.map(function (t) { return "<tr><td>" + t[0] + '</td><td style="color:var(--s-trap)">' + t[1] + '</td><td style="font-family:system-ui,sans-serif">' + t[2] + "</td></tr>"; }).join("") +
+      "</tbody></table></div>";
+  }
+  renderISA();
 
   // ---------- init ----------
   var initial = null;
