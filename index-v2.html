@@ -1,0 +1,1771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LC-3 Explorer v2</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --panel-2: #f0f2f5;
+  --border: #d9dde3;
+  --text: #1d2330;
+  --muted: #6b7486;
+  --accent: #2f6fdf;
+  --accent-soft: rgba(47,111,223,.12);
+  --err: #c62f3b;
+  --err-soft: rgba(198,47,59,.12);
+  --warn: #a86a00;
+  --warn-soft: rgba(168,106,0,.12);
+  --hl-row: rgba(47,111,223,.16);
+  /* syntax */
+  --s-comment: #7c8597;
+  --s-op: #1f5bd0;
+  --s-dir: #a3329e;
+  --s-reg: #0b7a63;
+  --s-num: #b35a00;
+  --s-str: #2f8a2f;
+  --s-label: #8a4b08;
+  --s-trap: #c2185b;
+  /* bit-field colours */
+  --f-op: #1f5bd0;
+  --f-reg: #0b7a63;
+  --f-imm: #b35a00;
+  --f-off: #a3329e;
+  --f-flag: #c2185b;
+  --f-zero: #a3abb9;
+  --f-data: #1d2330;
+  --line-a: 0.10;
+  /* simulator */
+  --exec: #15803d;
+  --exec-soft: rgba(21,128,61,.16);
+  --chg: #c2410c;
+  --chg-soft: rgba(194,65,12,.15);
+  --rd-soft: rgba(47,111,223,.13);
+  --spec-bg: #ece8f8; --spec-border: #d6cdf0; --spec-name: #6d4bc4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181e; --panel: #1c2028; --panel-2: #232833; --border: #313847;
+    --text: #dde3ee; --muted: #8b95a8; --accent: #6ea2ff; --accent-soft: rgba(110,162,255,.14);
+    --err: #ff6b76; --err-soft: rgba(255,107,118,.14); --warn: #f0b54a; --warn-soft: rgba(240,181,74,.13);
+    --hl-row: rgba(110,162,255,.20);
+    --s-comment: #6f7a8e; --s-op: #7aa8ff; --s-dir: #e08ae0; --s-reg: #5fd3b3; --s-num: #f5a35c;
+    --s-str: #8fd17f; --s-label: #e6c07b; --s-trap: #ff7eb0;
+    --f-op: #7aa8ff; --f-reg: #5fd3b3; --f-imm: #f5a35c; --f-off: #e08ae0; --f-flag: #ff7eb0;
+    --f-zero: #5b6476; --f-data: #dde3ee; --line-a: 0.13;
+    --exec: #4ade80; --exec-soft: rgba(74,222,128,.15); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
+  --spec-bg: #2a2540; --spec-border: #3d3560; --spec-name: #b9a2ff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181e; --panel: #1c2028; --panel-2: #232833; --border: #313847;
+  --text: #dde3ee; --muted: #8b95a8; --accent: #6ea2ff; --accent-soft: rgba(110,162,255,.14);
+  --err: #ff6b76; --err-soft: rgba(255,107,118,.14); --warn: #f0b54a; --warn-soft: rgba(240,181,74,.13);
+  --hl-row: rgba(110,162,255,.20);
+  --s-comment: #6f7a8e; --s-op: #7aa8ff; --s-dir: #e08ae0; --s-reg: #5fd3b3; --s-num: #f5a35c;
+  --s-str: #8fd17f; --s-label: #e6c07b; --s-trap: #ff7eb0;
+  --f-op: #7aa8ff; --f-reg: #5fd3b3; --f-imm: #f5a35c; --f-off: #e08ae0; --f-flag: #ff7eb0;
+  --f-zero: #5b6476; --f-data: #dde3ee; --line-a: 0.13;
+  --exec: #4ade80; --exec-soft: rgba(74,222,128,.15); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
+  --spec-bg: #2a2540; --spec-border: #3d3560; --spec-name: #b9a2ff;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.mono, textarea, .code, table.mem, .gutter { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+/* ---------- top bar ---------- */
+header {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 15px; margin: 0 8px 0 0; font-weight: 650; letter-spacing: .2px; }
+header h1 span { color: var(--accent); }
+header .spacer { flex: 1; }
+button, select {
+  font: inherit; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; cursor: pointer;
+}
+button:hover, select:hover { border-color: var(--accent); }
+label.chk { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); cursor: pointer; user-select: none; }
+.status { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.status.bad { background: var(--err-soft); color: var(--err); }
+.status.warn { background: var(--warn-soft); color: var(--warn); }
+
+/* ---------- main split ---------- */
+main { flex: 1; display: flex; min-height: 0; }
+.pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--panel); }
+#left { flex: 0 0 36%; }
+#right { flex: 1; }
+.splitter { flex: 0 0 6px; cursor: col-resize; background: var(--border); opacity: .6; }
+.splitter:hover, .splitter.drag { background: var(--accent); opacity: 1; }
+.pane-head {
+  display: flex; align-items: center; gap: 4px; padding: 0 10px; height: 34px; flex: 0 0 34px;
+  background: var(--panel-2); border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px;
+}
+.pane-head .title { font-weight: 600; color: var(--text); margin-right: 8px; }
+.tab { border: 0; background: transparent; border-radius: 0; padding: 0 10px; height: 34px; color: var(--muted); border-bottom: 2px solid transparent; }
+.tab:hover { color: var(--text); }
+.tab.on { color: var(--text); border-bottom-color: var(--accent); }
+.pane-head .spacer { flex: 1; }
+
+/* ---------- editor ---------- */
+.editor { flex: 1; display: flex; min-height: 0; position: relative; }
+.gutter {
+  flex: 0 0 auto; overflow: hidden; background: var(--panel-2); border-right: 1px solid var(--border);
+  color: var(--muted); font-size: 13px; line-height: 20px; padding: 8px 0; user-select: none; text-align: right;
+}
+.gutter .g { height: 20px; display: flex; padding: 0 8px 0 4px; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+.gutter .g .ga { color: var(--accent); opacity: .8; min-width: 5ch; text-align: left; }
+.gutter .g.err { background: var(--err-soft); color: var(--err); }
+.gutter .g.warn { background: var(--warn-soft); color: var(--warn); }
+.gutter .g.cur { color: var(--text); }
+.ed-wrap { flex: 1; position: relative; overflow: hidden; min-width: 0; }
+.code, textarea.src {
+  margin: 0; padding: 8px 12px; font-size: 13px; line-height: 20px; tab-size: 8; -moz-tab-size: 8;
+  white-space: pre; letter-spacing: 0; font-variant-ligatures: none;
+}
+.code { position: absolute; top: 0; left: 0; min-width: 100%; pointer-events: none; color: var(--text); }
+.code .l { height: 20px; }
+.code .l.hl { box-shadow: inset 3px 0 0 var(--accent); background: var(--hl-row) !important; }
+.code .l.err { background-image: linear-gradient(var(--err-soft), var(--err-soft)); }
+textarea.src {
+  position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: 0; outline: none;
+  background: transparent; color: transparent; caret-color: var(--text); overflow: auto;
+}
+textarea.src::selection { background: rgba(110,140,255,.35); color: transparent; }
+.t-c { color: var(--s-comment); font-style: italic; }
+.t-op { color: var(--s-op); font-weight: 600; }
+.t-dir { color: var(--s-dir); font-weight: 600; }
+.t-reg { color: var(--s-reg); }
+.t-num { color: var(--s-num); }
+.t-str { color: var(--s-str); }
+.t-lab { color: var(--s-label); }
+.t-trap { color: var(--s-trap); font-weight: 600; }
+
+/* ---------- diagnostics ---------- */
+.diag { flex: 0 0 auto; max-height: 30%; overflow: auto; border-top: 1px solid var(--border); background: var(--panel); }
+.diag:empty { display: none; }
+.diag .d { display: flex; gap: 10px; padding: 4px 12px; cursor: pointer; font-size: 12.5px; border-bottom: 1px solid var(--border); }
+.diag .d:hover { background: var(--panel-2); }
+.diag .d .k { font-weight: 650; min-width: 54px; }
+.diag .d.error .k { color: var(--err); }
+.diag .d.warning .k { color: var(--warn); }
+.diag .d .ln { color: var(--muted); min-width: 56px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* ---------- memory view ---------- */
+.view { flex: 1; overflow: auto; min-height: 0; }
+.view[hidden] { display: none; }
+table.mem { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.mem th {
+  position: sticky; top: 0; z-index: 1; background: var(--panel-2); color: var(--muted); font-weight: 600;
+  text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); font-family: system-ui, sans-serif; font-size: 12px; white-space: nowrap;
+}
+table.mem td { padding: 2px 10px; white-space: nowrap; height: 22px; border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); }
+table.mem tr.row { cursor: pointer; }
+table.mem tr.row:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+table.mem tr.row.hl td { background: var(--hl-row) !important; }
+table.mem tr.row.hl td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+table.mem tr.seg td {
+  background: var(--panel-2); color: var(--muted); font-family: system-ui, sans-serif; font-size: 12px; padding: 5px 10px; font-weight: 600;
+}
+td.addr { color: var(--accent); }
+td.hex { font-weight: 600; }
+td.lab { color: var(--s-label); }
+td.ins { color: var(--text); }
+td.ins .note { color: var(--muted); margin-left: 10px; }
+td.lnum { color: var(--muted); text-align: right; }
+.bits { letter-spacing: .5px; }
+.bits span { padding: 0 1px; border-radius: 3px; }
+.bits span + span { margin-left: 5px; }
+.f-op { color: var(--f-op); font-weight: 650; }
+.f-reg { color: var(--f-reg); }
+.f-imm { color: var(--f-imm); }
+.f-off { color: var(--f-off); }
+.f-flag { color: var(--f-flag); }
+.f-zero { color: var(--f-zero); }
+.f-data { color: var(--f-data); }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 6px 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); background: var(--panel); }
+.legend b { font-weight: 600; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* symbols / output */
+table.sym { border-collapse: collapse; font-size: 13px; margin: 0; min-width: 320px; }
+table.sym th, table.sym td { padding: 4px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+table.sym th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel-2); }
+table.sym td { font-family: ui-monospace, Menlo, Consolas, monospace; }
+table.sym tr { cursor: pointer; }
+table.sym tr:hover td { background: var(--panel-2); }
+.outbox { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.outbox .row2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.outbox pre { margin: 0; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; overflow: auto; font-size: 12.5px; line-height: 1.5; max-height: 60vh; }
+.outbox p { margin: 0; color: var(--muted); }
+
+/* tooltip */
+#tip {
+  position: fixed; z-index: 10; pointer-events: none; display: none; max-width: 360px;
+  background: var(--panel); color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 8px 10px; font-size: 12px;
+}
+#tip table { border-collapse: collapse; font-family: ui-monospace, Menlo, Consolas, monospace; }
+#tip td { padding: 1px 8px 1px 0; }
+#tip .h { font-weight: 650; margin-bottom: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+/* ---------- footer ---------- */
+footer {
+  flex: 0 0 auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;
+  padding: 4px 16px; background: var(--panel); border-top: 1px solid var(--border); color: var(--muted); font-size: 11.5px;
+}
+footer .sep { opacity: .5; }
+
+/* ---------- machine (simulator) pane ---------- */
+#sim { flex: 0 0 420px; }
+.sim-ctl { display: flex; gap: 6px; padding: 8px 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+.sim-ctl button { display: inline-flex; align-items: center; gap: 6px; height: 30px; }
+.sim-ctl button svg { width: 14px; height: 14px; fill: currentColor; }
+.sim-ctl button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; min-width: 84px; justify-content: center; }
+.sim-ctl button:disabled { opacity: .45; cursor: default; border-color: var(--border); }
+.sim-ctl .spacer { flex: 1; }
+.sim-ctl select { height: 30px; }
+.timeline { display: flex; align-items: center; gap: 10px; padding: 6px 10px 8px; border-bottom: 1px solid var(--border); }
+.timeline input[type=range] { flex: 1; min-width: 60px; accent-color: var(--accent); }
+.timeline .tl { font-weight: 650; min-width: 6.5ch; }
+.timeline .tm { color: var(--muted); white-space: nowrap; }
+.sim-now { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.sim-now .k { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; padding-top: 1px; }
+.sim-now .v { font-family: ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
+.sim-now .v .a { color: var(--accent); margin-right: 8px; }
+.sim-now .v .fx { color: var(--chg); }
+.sim-now .v .end { font-weight: 650; }
+.sim-now .v .end.halt { color: var(--exec); }
+.sim-now .v .end.error, .sim-now .v .end.limit { color: var(--err); }
+.sim-now .v .end.input { color: var(--warn); }
+.regs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.reg {
+  display: flex; align-items: baseline; gap: 8px; padding: 3px 8px; border-radius: 6px; min-width: 0;
+  background: var(--panel-2); border: 1px solid transparent; font-family: ui-monospace, Menlo, Consolas, monospace;
+  transition: background-color .25s, border-color .25s;
+}
+.reg .n { color: var(--s-reg); font-weight: 650; min-width: 3ch; }
+.reg .v { font-weight: 600; }
+.reg .d { color: var(--muted); margin-left: auto; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reg.spec { background: var(--spec-bg); border-color: var(--spec-border); }
+.reg.spec .n { color: var(--spec-name); }
+.reg.chg { background: var(--chg-soft); border-color: var(--chg); }
+.reg.chg .v { color: var(--chg); }
+.cc { display: inline-flex; gap: 3px; }
+.cc span { padding: 0 5px; border-radius: 4px; color: var(--muted); border: 1px solid var(--border); font-weight: 600; }
+.cc span.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pane-head.sub { height: 30px; flex: 0 0 30px; border-top: 0; }
+.pane-head.sub .tab { height: 30px; }
+.tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--chg); margin-left: 5px; vertical-align: middle; }
+table.rmem { border-collapse: collapse; width: 100%; font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+table.rmem th { position: sticky; top: 0; z-index: 1; background: var(--panel-2); color: var(--muted); font-weight: 600; text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); font-family: system-ui, sans-serif; font-size: 12px; white-space: nowrap; }
+table.rmem td { padding: 1px 8px; height: 22px; white-space: nowrap; border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); transition: background-color .25s; }
+table.rmem td.pm { width: 14px; padding: 0 0 0 6px; color: var(--exec); font-size: 11px; }
+table.rmem td.ra { color: var(--accent); }
+table.rmem td.rv { font-weight: 600; }
+table.rmem td.rd { color: var(--muted); text-align: right; }
+table.rmem td.rl { color: var(--s-label); }
+table.rmem td.rs { color: var(--muted); font-family: system-ui, sans-serif; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+table.rmem tr { cursor: pointer; }
+table.rmem tr:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+table.rmem tr.mod td.rv { text-decoration: underline; text-decoration-color: var(--chg); text-underline-offset: 3px; }
+table.rmem tr.pc td { background: var(--exec-soft); }
+table.rmem tr.pc td.pm::before { content: "▶"; }
+table.rmem tr.r td { background: var(--rd-soft); }
+table.rmem tr.w td { background: var(--chg-soft); }
+table.rmem tr.w td.rv { color: var(--chg); }
+table.rmem tr.gap td { color: var(--muted); text-align: center; height: 18px; font-size: 11px; cursor: default; background: var(--panel-2); }
+.trace { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+.trace .tr { display: grid; grid-template-columns: 5ch 6ch minmax(9ch, 13ch) 1fr; gap: 8px; padding: 2px 10px; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); }
+.trace .tr:hover { background: var(--panel-2); }
+.trace .tr.cur { background: var(--hl-row); box-shadow: inset 3px 0 0 var(--accent); }
+.trace .tr.fut { opacity: .5; }
+.trace .tr .t { color: var(--muted); text-align: right; }
+.trace .tr .a { color: var(--accent); }
+.trace .tr .fx { color: var(--chg); overflow-wrap: anywhere; }
+.trace .tr.endrow { cursor: default; color: var(--muted); font-family: system-ui, sans-serif; display: block; padding: 6px 10px; }
+.console { padding: 10px; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+.console pre { flex: 1; margin: 0; padding: 8px 10px; min-height: 80px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; overflow: auto; font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.console pre .cur { display: inline-block; width: 7px; height: 14px; background: var(--exec); vertical-align: text-bottom; opacity: .7; }
+.console label { color: var(--muted); font-size: 12px; }
+.console textarea { font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; resize: vertical; min-height: 44px; }
+.console textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.console .used { color: var(--muted); font-size: 12px; }
+.sim-empty { padding: 30px 20px; text-align: center; color: var(--muted); }
+/* current instruction in the editor and the assembly table */
+.code .l.exec { box-shadow: inset 3px 0 0 var(--exec); background-image: linear-gradient(var(--exec-soft), var(--exec-soft)); }
+.gutter .g.exec { color: var(--exec); font-weight: 700; }
+table.mem tr.row.exec td { background-image: linear-gradient(var(--exec-soft), var(--exec-soft)); }
+table.mem tr.row.exec td:first-child { box-shadow: inset 3px 0 0 var(--exec); }
+
+@media (max-width: 1100px) {
+  #sim { flex-basis: 360px; }
+  .trace .tr { grid-template-columns: 4ch 6ch 1fr; }
+  .trace .tr .fx { grid-column: 2 / -1; }
+}
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  main { flex-direction: column; }
+  #left { flex: 0 0 55vh; }
+  #right { flex: 0 0 70vh; }
+  #sim { flex: 0 0 auto; min-height: 90vh; }
+  #sim .view { min-height: 320px; }
+  .splitter { display: none; }
+  header { padding: 8px 16px; }
+  .hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>LC-3 <span>Explorer</span> <small style="color:var(--muted);font-weight:500">v2</small></h1>
+  <select id="examples" title="Load an example program">
+    <option value="">Examples…</option>
+  </select>
+  <label class="chk" title="Colour each source line and the memory words it produces"><input type="checkbox" id="optColor" checked> Line colours</label>
+  <span class="spacer"></span>
+  <span id="status" class="status">ready</span>
+  <button id="btnShare" title="Copy a link that contains this source">Share link</button>
+  <button id="btnTheme" title="Toggle light / dark">◐</button>
+</header>
+
+<main>
+  <section class="pane" id="left">
+    <div class="pane-head"><span class="title">Source</span><span class="hide-sm">LC-3 assembly</span><span class="spacer"></span><span id="cursorPos" class="mono"></span></div>
+    <div class="editor">
+      <div class="gutter" id="gutter"></div>
+      <div class="ed-wrap" id="edWrap">
+        <div class="code" id="code" aria-hidden="true"></div>
+        <textarea class="src" id="src" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="LC-3 assembly source"></textarea>
+      </div>
+    </div>
+    <div class="diag" id="diag"></div>
+  </section>
+  <div class="splitter" id="splitter" title="Drag to resize"></div>
+  <section class="pane" id="right">
+    <div class="pane-head">
+      <button class="tab on" data-view="vMem">Memory</button>
+      <button class="tab" data-view="vSym">Symbols</button>
+      <button class="tab" data-view="vOut">Output</button>
+      <span class="spacer"></span>
+      <label class="chk hide-sm"><input type="checkbox" id="optBin" checked> Binary</label>
+      <label class="chk hide-sm"><input type="checkbox" id="optDec"> Decimal</label>
+    </div>
+    <div class="view" id="vMem"></div>
+    <div class="view" id="vSym" hidden></div>
+    <div class="view" id="vOut" hidden></div>
+    <div class="legend" id="legend">
+      <span><b class="f-op">opcode</b></span><span><b class="f-reg">register</b></span><span><b class="f-imm">imm / trapvect</b></span>
+      <span><b class="f-off">PC/base offset</b></span><span><b class="f-flag">flag / nzp</b></span><span><b class="f-zero">fixed</b></span><span><b class="f-data">data</b></span>
+    </div>
+  </section>
+  <div class="splitter" id="splitter2" title="Drag to resize"></div>
+  <section class="pane" id="sim">
+    <div class="pane-head"><span class="title">Machine</span><span class="hide-sm">registers &amp; memory over time</span><span class="spacer"></span><span id="simBadge" class="status">not run</span></div>
+    <div class="sim-ctl">
+      <button id="bReset" title="Reset to t = 0 (Home)" aria-label="Reset"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="2" height="10"/><path d="M14 3v10L5 8z"/></svg></button>
+      <button id="bBack" title="Step back (←)" aria-label="Step back"><svg viewBox="0 0 16 16"><path d="M11 3v10L3 8z"/><rect x="12" y="3" width="2" height="10"/></svg></button>
+      <button id="bPlay" class="primary" title="Play / pause (Space)"><svg viewBox="0 0 16 16"><path d="M4 2.5v11L13.5 8z"/></svg><span>Play</span></button>
+      <button id="bStep" title="Step forward one instruction (→)" aria-label="Step"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="2" height="10"/><path d="M5 3v10l8-5z"/></svg><span>Step</span></button>
+      <button id="bEnd" title="Run to the end (End)" aria-label="Run to end"><svg viewBox="0 0 16 16"><path d="M2 3v10l6-5zM8 3v10l6-5z"/></svg></button>
+      <span class="spacer"></span>
+      <select id="simSpeed" title="Playback speed">
+        <option value="1">1 step/s</option><option value="2">2 steps/s</option><option value="4">4 steps/s</option>
+        <option value="10">10 steps/s</option><option value="30">30 steps/s</option><option value="100">100 steps/s</option>
+      </select>
+    </div>
+    <div class="timeline">
+      <span class="tl mono" id="tLabel">t = 0</span>
+      <input type="range" id="tRange" min="0" max="0" value="0" step="1" aria-label="Time step">
+      <span class="tm mono" id="tMax">of 0</span>
+    </div>
+    <div class="sim-now" id="simNow"></div>
+    <div class="regs" id="regs"></div>
+    <div class="pane-head sub">
+      <button class="tab stab on" data-view="sMem">Memory</button>
+      <button class="tab stab" data-view="sTrace">Trace</button>
+      <button class="tab stab" data-view="sCon">Console<span class="dot" id="conDot" hidden></span></button>
+      <span class="spacer"></span>
+      <label class="chk" title="Keep the PC / last written word in view"><input type="checkbox" id="optFollow" checked> Follow</label>
+    </div>
+    <div class="view" id="sMem"></div>
+    <div class="view" id="sTrace" hidden></div>
+    <div class="view" id="sCon" hidden>
+      <div class="console">
+        <pre id="conOut"></pre>
+        <label for="simIn">Keyboard input, read one character at a time by GETC / IN (Enter = newline)</label>
+        <textarea id="simIn" rows="2" spellcheck="false" placeholder="e.g. hello⏎"></textarea>
+        <div class="used" id="inUsed"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  <span>LC-3 Explorer v2</span><span class="sep">·</span>
+  <span>Generated 2026-11-23</span><span class="sep">·</span>
+  <span>Generated by Claude AI</span>
+</footer>
+<div id="tip"></div>
+
+<!-- ===================== LC-3 assembler core (no DOM) ===================== -->
+<script id="lc3-core">
+"use strict";
+var LC3 = (function () {
+  var OPCODES = {
+    ADD:1, AND:1, NOT:1, JMP:1, JSR:1, JSRR:1, LD:1, LDI:1, LDR:1, LEA:1,
+    ST:1, STI:1, STR:1, TRAP:1, RTI:1, RET:1
+  };
+  var TRAPS = { GETC: 0x20, OUT: 0x21, PUTS: 0x22, IN: 0x23, PUTSP: 0x24, HALT: 0x25 };
+  var DIRECTIVES = { ".ORIG":1, ".END":1, ".FILL":1, ".BLKW":1, ".STRINGZ":1 };
+  var BR_RE = /^BR([NZP]{0,3})$/;
+
+  function isBranch(u) {
+    var m = BR_RE.exec(u);
+    if (!m) return false;
+    var s = m[1];
+    return !/(.).*\1/.test(s); // no repeated flag letters
+  }
+  function isMnemonic(tok) {
+    var u = tok.toUpperCase();
+    return !!(OPCODES[u] || TRAPS.hasOwnProperty(u) || DIRECTIVES[u] || isBranch(u));
+  }
+
+  // number literal: #10  #-5  x3000  X-1  0x1F  b1010  10  -3
+  function parseNum(t) {
+    var m;
+    if ((m = /^#([+-]?\d+)$/.exec(t))) return parseInt(m[1], 10);
+    if ((m = /^#?0?[xX]([+-]?)([0-9a-fA-F]+)$/.exec(t))) { var v = parseInt(m[2], 16); return m[1] === "-" ? -v : v; }
+    if ((m = /^#?[bB]([+-]?)([01]+)$/.exec(t))) { var b = parseInt(m[2], 2); return m[1] === "-" ? -b : b; }
+    if ((m = /^[+-]?\d+$/.exec(t))) return parseInt(t, 10);
+    return null;
+  }
+  function parseReg(t) {
+    var m = /^[rR]([0-7])$/.exec(t);
+    return m ? +m[1] : null;
+  }
+
+  // Split one source line into tokens (strings kept whole) and a comment.
+  function tokenize(line) {
+    var toks = [], i = 0, n = line.length, comment = null, err = null;
+    while (i < n) {
+      var c = line[i];
+      if (c === ";") { comment = line.slice(i); break; }
+      if (c === " " || c === "\t" || c === "," || c === "\r") { i++; continue; }
+      var start = i;
+      if (c === '"') {
+        var s = "", closed = false; i++;
+        while (i < n) {
+          var d = line[i];
+          if (d === "\\" && i + 1 < n) {
+            var e = line[i + 1];
+            s += ({ n: "\n", t: "\t", r: "\r", "0": "\0", "\\": "\\", '"': '"', a: "\x07", e: "\x1b" })[e] !== undefined
+              ? ({ n: "\n", t: "\t", r: "\r", "0": "\0", "\\": "\\", '"': '"', a: "\x07", e: "\x1b" })[e] : e;
+            i += 2; continue;
+          }
+          if (d === '"') { closed = true; i++; break; }
+          s += d; i++;
+        }
+        if (!closed) err = "Unterminated string literal";
+        toks.push({ text: line.slice(start, i), str: s, col: start, isStr: true });
+        continue;
+      }
+      while (i < n && !/[\s,;"]/.test(line[i])) i++;
+      toks.push({ text: line.slice(start, i), col: start });
+    }
+    return { toks: toks, comment: comment, err: err };
+  }
+
+  function hex4(v) { return "x" + ((v & 0xFFFF) >>> 0).toString(16).toUpperCase().padStart(4, "0"); }
+
+  // operand spec per mnemonic: list of kinds
+  function spec(u) {
+    if (isBranch(u)) return ["label"];
+    switch (u) {
+      case "ADD": case "AND": return ["reg", "reg", "regimm"];
+      case "NOT": return ["reg", "reg"];
+      case "JMP": case "JSRR": return ["reg"];
+      case "JSR": return ["label"];
+      case "LD": case "LDI": case "LEA": case "ST": case "STI": return ["reg", "label"];
+      case "LDR": case "STR": return ["reg", "reg", "num"];
+      case "TRAP": return ["num"];
+      case "RET": case "RTI": return [];
+    }
+    if (TRAPS.hasOwnProperty(u)) return [];
+    return null;
+  }
+
+  function assemble(source) {
+    var lines = source.split("\n");
+    var diags = [];
+    function error(line, msg) { diags.push({ line: line, sev: "error", msg: msg }); }
+    function warn(line, msg) { diags.push({ line: line, sev: "warning", msg: msg }); }
+
+    // ---------- pass 1: parse + lay out addresses ----------
+    var stmts = [];          // parsed statements
+    var symbols = {};        // NAME(upper) -> {name, addr, line}
+    var symOrder = [];
+    var lc = null, inSeg = false, seenEnd = false, segCount = 0;
+    var lineAddr = new Array(lines.length).fill(null);
+    var pendingLabels = [];  // labels on their own line waiting for the next address
+
+    function defineLabel(tok, ln, addr) {
+      var name = tok.replace(/:$/, "");
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) { error(ln, "Invalid label name '" + name + "'"); return; }
+      if (parseReg(name) !== null) { error(ln, "'" + name + "' is a register name and cannot be a label"); return; }
+      if (parseNum(name) !== null) { warn(ln, "Label '" + name + "' looks like a number literal"); }
+      var key = name.toUpperCase();
+      if (symbols[key]) { error(ln, "Label '" + name + "' already defined on line " + (symbols[key].line + 1)); return; }
+      symbols[key] = { name: name, addr: addr, line: ln };
+      symOrder.push(key);
+    }
+
+    for (var ln = 0; ln < lines.length; ln++) {
+      var tk = tokenize(lines[ln]);
+      if (tk.err) error(ln, tk.err);
+      var toks = tk.toks;
+      if (!toks.length) continue;
+
+      var label = null, idx = 0;
+      if (!toks[0].isStr && !isMnemonic(toks[0].text)) { label = toks[0].text; idx = 1; }
+      var mnTok = toks[idx];
+      var mn = mnTok ? mnTok.text.toUpperCase() : null;
+      if (mnTok && (mnTok.isStr || !isMnemonic(mnTok.text))) {
+        // "MOV R1, R2": the first word was taken as a label, but the next token is clearly an operand
+        var looksOperand = mnTok.isStr || parseReg(mnTok.text) !== null || parseNum(mnTok.text) !== null;
+        var bad = label && looksOperand ? label : mnTok.text;
+        error(ln, "Unknown instruction or directive '" + bad + "'");
+        continue;
+      }
+      var ops = toks.slice(idx + 1);
+
+      if (mn === ".ORIG") {
+        if (label) error(ln, "A label cannot be placed on .ORIG");
+        if (inSeg) error(ln, ".ORIG inside a block that was not closed with .END");
+        var v = ops.length ? parseNum(ops[0].text) : null;
+        if (ops.length !== 1 || v === null) { error(ln, ".ORIG needs one numeric address, e.g. .ORIG x3000"); v = 0x3000; }
+        if (v < 0 || v > 0xFFFF) { error(ln, ".ORIG address out of range"); v &= 0xFFFF; }
+        lc = v; inSeg = true; segCount++;
+        stmts.push({ line: ln, mn: ".ORIG", ops: ops, addr: v, size: 0, seg: segCount });
+        continue;
+      }
+      if (mn === ".END") {
+        if (label) error(ln, "A label cannot be placed on .END");
+        if (!inSeg) error(ln, ".END without a matching .ORIG");
+        if (ops.length) warn(ln, "Operands after .END are ignored");
+        inSeg = false; seenEnd = true;
+        pendingLabels.forEach(function (p) { warn(p.line, "Label '" + p.name + "' is at the end of the block and points past the last word"); });
+        pendingLabels = [];
+        continue;
+      }
+      if (!inSeg) {
+        error(ln, seenEnd ? "Code after .END (start a new block with .ORIG)" : "Code before .ORIG (add e.g. .ORIG x3000 first)");
+        continue;
+      }
+      if (label) defineLabel(label, ln, lc);
+      if (!mn) { continue; } // label only line: label binds to current lc
+      var size = 1;
+      if (mn === ".BLKW") {
+        var n = ops.length ? parseNum(ops[0].text) : null;
+        if (n === null || ops.length < 1) { error(ln, ".BLKW needs a count, e.g. .BLKW #10"); n = 1; }
+        else if (n < 1) { error(ln, ".BLKW count must be at least 1"); n = 1; }
+        if (ops.length > 2) error(ln, ".BLKW takes a count and optional fill value");
+        size = n;
+      } else if (mn === ".STRINGZ") {
+        if (ops.length !== 1 || !ops[0].isStr) { error(ln, '.STRINGZ needs one quoted string, e.g. .STRINGZ "Hi"'); size = 1; }
+        else size = ops[0].str.length + 1;
+      }
+      if (lc + size > 0x10000) error(ln, "Program runs past the end of memory (xFFFF)");
+      stmts.push({ line: ln, mn: mn, ops: ops, addr: lc, size: size, label: label ? label.replace(/:$/, "") : null, seg: segCount });
+      lineAddr[ln] = lc;
+      lc = (lc + size);
+    }
+    if (inSeg) {
+      var last = lines.length - 1; while (last > 0 && !lines[last].trim()) last--;
+      warn(last, "Missing .END at end of program");
+    }
+
+    // ---------- pass 2: encode ----------
+    var words = []; // {addr, value, line, fields, text, note, label, kind}
+    var segments = [];
+
+    function signedFits(v, bits) { var lo = -(1 << (bits - 1)), hi = (1 << (bits - 1)) - 1; return v >= lo && v <= hi; }
+    function resolveOffset(tok, pc, bits, ln) {
+      // returns {off, target, labelName}
+      var n = parseNum(tok.text);
+      if (n !== null) {
+        if (!signedFits(n, bits)) error(ln, "Offset " + n + " does not fit in " + bits + " bits (" + (-(1 << (bits - 1))) + ".." + ((1 << (bits - 1)) - 1) + ")");
+        return { off: n, target: (pc + 1 + n) & 0xFFFF, label: null };
+      }
+      var s = symbols[tok.text.toUpperCase()];
+      if (!s) { error(ln, "Undefined label '" + tok.text + "'"); return { off: 0, target: null, label: tok.text }; }
+      var off = s.addr - (pc + 1);
+      if (!signedFits(off, bits)) error(ln, "Label '" + s.name + "' is too far away: offset " + off + " does not fit in " + bits + " bits");
+      return { off: off, target: s.addr, label: s.name };
+    }
+    function reg(tok, ln) {
+      var r = tok ? parseReg(tok.text) : null;
+      if (r === null) { error(ln, "Expected a register R0-R7" + (tok ? ", got '" + tok.text + "'" : "")); return 0; }
+      return r;
+    }
+    function bitsOf(v, w) { return (v & ((1 << w) - 1)); }
+
+    var curSeg = null;
+    stmts.forEach(function (st) {
+      var ln = st.line, ops = st.ops, mn = st.mn;
+      if (mn === ".ORIG") { curSeg = { start: st.addr, words: [], line: ln }; segments.push(curSeg); return; }
+      var srcText = lines[ln].replace(/;.*$/, "");
+      var labelName = st.label;
+
+      function emit(value, fields, text, note, kind) {
+        var k = st._n || 0;
+        // for multiword statements only the first word carries the label
+        var w = { addr: (st.addr + k) & 0xFFFF, value: value & 0xFFFF, line: ln, fields: fields, text: text, note: note || "", label: k === 0 ? labelName : null, kind: kind || "ins", idx: words.length };
+        st._n = k + 1;
+        curSeg.words.push(w); words.push(w);
+        return w;
+      }
+
+      if (mn === ".FILL") {
+        var v = 0, note = "";
+        if (ops.length !== 1) error(ln, ".FILL needs exactly one value");
+        if (ops.length) {
+          var n = parseNum(ops[0].text);
+          if (n !== null) {
+            if (n < -32768 || n > 65535) error(ln, ".FILL value " + n + " does not fit in 16 bits");
+            v = n;
+          } else if (ops[0].isStr) {
+            error(ln, ".FILL takes a number or label (use .STRINGZ for strings)");
+          } else {
+            var s = symbols[ops[0].text.toUpperCase()];
+            if (!s) error(ln, "Undefined label '" + ops[0].text + "'");
+            else { v = s.addr; note = "address of " + s.name; }
+          }
+        }
+        emit(v, [[16, "data", "value"]], ".FILL " + hex4(v), note || charNote(v), "data");
+        return;
+      }
+      if (mn === ".BLKW") {
+        var fill = 0;
+        if (ops.length > 1) {
+          var f = parseNum(ops[1].text);
+          if (f === null) { var sy = symbols[ops[1].text.toUpperCase()]; if (sy) f = sy.addr; else { error(ln, "Bad .BLKW fill value '" + ops[1].text + "'"); f = 0; } }
+          fill = f;
+        }
+        for (var i = 0; i < st.size; i++) emit(fill, [[16, "data", "value"]], i === 0 ? ".BLKW " + st.size : "", i === 0 ? "reserved block of " + st.size + " word" + (st.size > 1 ? "s" : "") : "", "blkw");
+        return;
+      }
+      if (mn === ".STRINGZ") {
+        if (!ops.length || !ops[0].isStr) { emit(0, [[16, "data", "value"]], ".STRINGZ ?", "", "data"); return; }
+        var str = ops[0].str;
+        for (var j = 0; j < str.length; j++) {
+          var code = str.charCodeAt(j);
+          if (code > 0xFF) warn(ln, "Non-ASCII character in string");
+          emit(code, [[16, "data", "value"]], j === 0 ? ".STRINGZ " + ops[0].text : "", charName(code), "str");
+        }
+        emit(0, [[16, "data", "value"]], str.length === 0 ? ".STRINGZ \"\"" : "", "NUL terminator", "str");
+        return;
+      }
+
+      var sp = spec(mn);
+      var expected = sp.length;
+      if (ops.length !== expected) {
+        error(ln, mn + " expects " + expected + " operand" + (expected === 1 ? "" : "s") + ", got " + ops.length);
+      }
+      var pc = st.addr, value = 0, fields, text = srcText.trim(), note = "";
+      // strip label from display text
+      if (labelName) text = text.replace(/^\S+\s*/, "");
+      text = text.replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ");
+
+      if (isBranch(mn)) {
+        var fl = BR_RE.exec(mn)[1];
+        var nn = fl.indexOf("N") >= 0, zz = fl.indexOf("Z") >= 0, pp = fl.indexOf("P") >= 0;
+        if (!fl) { nn = zz = pp = true; }
+        var r = ops[0] ? resolveOffset(ops[0], pc, 9, ln) : { off: 0, target: null };
+        value = (nn << 11) | (zz << 10) | (pp << 9) | bitsOf(r.off, 9);
+        fields = [[4, "op", "opcode BR (0000)"], [1, "flag", "n"], [1, "flag", "z"], [1, "flag", "p"], [9, "off", "PCoffset9 = " + r.off]];
+        note = targetNote(r);
+      } else switch (mn) {
+        case "ADD": case "AND": {
+          var opc = mn === "ADD" ? 1 : 5;
+          var dr = reg(ops[0], ln), sr1 = reg(ops[1], ln);
+          var t3 = ops[2], r2 = t3 ? parseReg(t3.text) : null;
+          if (r2 !== null) {
+            value = (opc << 12) | (dr << 9) | (sr1 << 6) | r2;
+            fields = [[4, "op", "opcode " + mn], [3, "reg", "DR = R" + dr], [3, "reg", "SR1 = R" + sr1], [1, "flag", "mode 0 = register"], [2, "zero", "unused"], [3, "reg", "SR2 = R" + r2]];
+          } else {
+            var im = t3 ? parseNum(t3.text) : null;
+            if (t3 && im === null) error(ln, "Expected a register or immediate, got '" + t3.text + "'");
+            im = im || 0;
+            if (!signedFits(im, 5)) error(ln, "Immediate " + im + " does not fit in imm5 (-16..15)");
+            value = (opc << 12) | (dr << 9) | (sr1 << 6) | (1 << 5) | bitsOf(im, 5);
+            fields = [[4, "op", "opcode " + mn], [3, "reg", "DR = R" + dr], [3, "reg", "SR1 = R" + sr1], [1, "flag", "mode 1 = immediate"], [5, "imm", "imm5 = " + im]];
+          }
+          break;
+        }
+        case "NOT": {
+          var d = reg(ops[0], ln), s1 = reg(ops[1], ln);
+          value = (9 << 12) | (d << 9) | (s1 << 6) | 0x3F;
+          fields = [[4, "op", "opcode NOT"], [3, "reg", "DR = R" + d], [3, "reg", "SR = R" + s1], [6, "zero", "111111"]];
+          break;
+        }
+        case "JMP": case "RET": {
+          var b = mn === "RET" ? 7 : reg(ops[0], ln);
+          value = (12 << 12) | (b << 6);
+          fields = [[4, "op", "opcode JMP"], [3, "zero", "000"], [3, "reg", "BaseR = R" + b + (mn === "RET" ? " (RET)" : "")], [6, "zero", "000000"]];
+          break;
+        }
+        case "JSR": {
+          var rj = ops[0] ? resolveOffset(ops[0], pc, 11, ln) : { off: 0, target: null };
+          value = (4 << 12) | (1 << 11) | bitsOf(rj.off, 11);
+          fields = [[4, "op", "opcode JSR"], [1, "flag", "1 = PC-relative"], [11, "off", "PCoffset11 = " + rj.off]];
+          note = targetNote(rj);
+          break;
+        }
+        case "JSRR": {
+          var bj = reg(ops[0], ln);
+          value = (4 << 12) | (bj << 6);
+          fields = [[4, "op", "opcode JSRR"], [1, "flag", "0 = register"], [2, "zero", "00"], [3, "reg", "BaseR = R" + bj], [6, "zero", "000000"]];
+          break;
+        }
+        case "LD": case "LDI": case "LEA": case "ST": case "STI": {
+          var oc = { LD: 2, LDI: 10, LEA: 14, ST: 3, STI: 11 }[mn];
+          var rr = reg(ops[0], ln);
+          var ro = ops[1] ? resolveOffset(ops[1], pc, 9, ln) : { off: 0, target: null };
+          value = (oc << 12) | (rr << 9) | bitsOf(ro.off, 9);
+          fields = [[4, "op", "opcode " + mn], [3, "reg", (mn[0] === "S" ? "SR" : "DR") + " = R" + rr], [9, "off", "PCoffset9 = " + ro.off]];
+          note = targetNote(ro);
+          break;
+        }
+        case "LDR": case "STR": {
+          var oc2 = mn === "LDR" ? 6 : 7;
+          var r0 = reg(ops[0], ln), base = reg(ops[1], ln);
+          var o6 = ops[2] ? parseNum(ops[2].text) : 0;
+          if (ops[2] && o6 === null) { error(ln, "Expected a numeric offset6, got '" + ops[2].text + "'"); o6 = 0; }
+          if (!signedFits(o6, 6)) error(ln, "Offset " + o6 + " does not fit in offset6 (-32..31)");
+          value = (oc2 << 12) | (r0 << 9) | (base << 6) | bitsOf(o6, 6);
+          fields = [[4, "op", "opcode " + mn], [3, "reg", (mn === "STR" ? "SR" : "DR") + " = R" + r0], [3, "reg", "BaseR = R" + base], [6, "off", "offset6 = " + o6]];
+          break;
+        }
+        case "TRAP": {
+          var tv = ops[0] ? parseNum(ops[0].text) : 0;
+          if (ops[0] && tv === null) { error(ln, "Expected a trap vector, e.g. TRAP x25"); tv = 0; }
+          if (tv < 0 || tv > 255) error(ln, "Trap vector must be in x00..xFF");
+          value = (15 << 12) | (tv & 0xFF);
+          fields = [[4, "op", "opcode TRAP"], [4, "zero", "0000"], [8, "imm", "trapvect8 = " + hex4(tv).replace("x00", "x")]];
+          note = trapName(tv & 0xFF);
+          break;
+        }
+        case "RTI": {
+          value = 8 << 12;
+          fields = [[4, "op", "opcode RTI"], [12, "zero", "000000000000"]];
+          break;
+        }
+        default: {
+          if (TRAPS.hasOwnProperty(mn)) {
+            var tvec = TRAPS[mn];
+            value = (15 << 12) | tvec;
+            fields = [[4, "op", "opcode TRAP"], [4, "zero", "0000"], [8, "imm", "trapvect8 = x" + tvec.toString(16).toUpperCase()]];
+            note = "= TRAP x" + tvec.toString(16).toUpperCase();
+          }
+        }
+      }
+      emit(value, fields, text, note, "ins");
+    });
+
+    function targetNote(r) {
+      if (r.target === null || r.target === undefined) return "";
+      return "→ " + hex4(r.target) + (r.label ? "" : "") ;
+    }
+    function trapName(v) { for (var k in TRAPS) if (TRAPS[k] === v) return k; return ""; }
+    function charName(c) {
+      if (c === 10) return "'\\n'"; if (c === 9) return "'\\t'"; if (c === 13) return "'\\r'"; if (c === 0) return "NUL";
+      if (c >= 32 && c < 127) return "'" + String.fromCharCode(c) + "'";
+      return "";
+    }
+    function charNote(v) { return ""; }
+
+    var symList = symOrder.map(function (k) { return symbols[k]; });
+    diags.sort(function (a, b) { return a.line - b.line || (a.sev === "error" ? -1 : 1); });
+    var nErr = diags.filter(function (d) { return d.sev === "error"; }).length;
+    return {
+      words: words, segments: segments, symbols: symList, diags: diags,
+      errors: nErr, warnings: diags.length - nErr, lineAddr: lineAddr, lineCount: lines.length
+    };
+  }
+
+  // ---------- disassembler ----------
+  function sext(v, b) { var m = 1 << (b - 1); v &= (1 << b) - 1; return (v ^ m) - m; }
+  function disasm(w, pc, symAt) {
+    symAt = symAt || {};
+    var op = w >> 12, dr = (w >> 9) & 7, sr1 = (w >> 6) & 7, npc = (pc + 1) & 0xFFFF;
+    function tgt(off) { var a = (npc + off) & 0xFFFF; return symAt[a] || hex4(a); }
+    function imm(v) { return "#" + v; }
+    switch (op) {
+      case 0: {
+        var f = (w & 0x800 ? "n" : "") + (w & 0x400 ? "z" : "") + (w & 0x200 ? "p" : "");
+        if (!f) return "NOP";
+        return "BR" + (f === "nzp" ? "" : f) + " " + tgt(sext(w, 9));
+      }
+      case 1: case 5: return (op === 1 ? "ADD" : "AND") + " R" + dr + ", R" + sr1 + ", " + (w & 0x20 ? imm(sext(w, 5)) : "R" + (w & 7));
+      case 2: return "LD R" + dr + ", " + tgt(sext(w, 9));
+      case 3: return "ST R" + dr + ", " + tgt(sext(w, 9));
+      case 4: return w & 0x800 ? "JSR " + tgt(sext(w, 11)) : "JSRR R" + sr1;
+      case 6: return "LDR R" + dr + ", R" + sr1 + ", " + imm(sext(w, 6));
+      case 7: return "STR R" + dr + ", R" + sr1 + ", " + imm(sext(w, 6));
+      case 8: return "RTI";
+      case 9: return "NOT R" + dr + ", R" + sr1;
+      case 10: return "LDI R" + dr + ", " + tgt(sext(w, 9));
+      case 11: return "STI R" + dr + ", " + tgt(sext(w, 9));
+      case 12: return sr1 === 7 ? "RET" : "JMP R" + sr1;
+      case 13: return "(reserved opcode)";
+      case 14: return "LEA R" + dr + ", " + tgt(sext(w, 9));
+      case 15: {
+        var v = w & 0xFF;
+        for (var k in TRAPS) if (TRAPS[k] === v) return k;
+        return "TRAP x" + v.toString(16).toUpperCase().padStart(2, "0");
+      }
+    }
+  }
+
+  // ---------- simulator ----------
+  // Runs an assembled program and records every step as a delta (old and new values),
+  // so a UI can move forwards and backwards through time. TRAPs are serviced directly
+  // (no OS image): R7 gets the return address as on real hardware, then the service
+  // routine's effect happens within the same step.
+  // Condition codes follow the 3rd edition / lc3tools: LEA does not set them.
+  var CC_N = 4, CC_Z = 2, CC_P = 1;
+  function ccOf(v) { return v & 0x8000 ? CC_N : v === 0 ? CC_Z : CC_P; }
+  function simulate(res, opts) {
+    opts = opts || {};
+    var maxSteps = opts.maxSteps || 10000, input = opts.input || "", inPos = 0, symAt = opts.symAt || {};
+    var mem = new Uint16Array(65536), addrLine = {};
+    res.words.forEach(function (w) { mem[w.addr] = w.value; addrLine[w.addr] = w.line; });
+    var initMem = new Uint16Array(mem);
+    var R = [0, 0, 0, 0, 0, 0, 0, 0], cc = CC_Z;
+    var pc = res.segments.length ? res.segments[0].start : 0x3000, start = pc;
+    var steps = [], out = "", touched = {}, fetched = {}, end = null, s = null;
+
+    function setR(r, v, setcc) {
+      v &= 0xFFFF; s.regs.push([r, R[r], v]); R[r] = v;
+      if (setcc) { var n = ccOf(v); s.cc = [cc, n]; cc = n; }
+    }
+    function rd(a) { a &= 0xFFFF; s.reads.push(a); touched[a] = 1; return mem[a]; }
+    function wr(a, v) { a &= 0xFFFF; v &= 0xFFFF; s.mem.push([a, mem[a], v]); mem[a] = v; touched[a] = 1; }
+    function emit(c) { s.out += String.fromCharCode(c & 0xFF); }
+
+    while (!end) {
+      if (steps.length >= maxSteps) { end = { reason: "limit", msg: "Stopped after " + maxSteps + " steps (possible infinite loop)" }; break; }
+      var ir = mem[pc];
+      s = { pc: pc, ir: ir, text: disasm(ir, pc, symAt), line: addrLine[pc], regs: [], mem: [], cc: null, reads: [], out: "", note: "" };
+      var npc = (pc + 1) & 0xFFFF;
+      var op = ir >> 12, dr = (ir >> 9) & 7, sr1 = (ir >> 6) & 7, stop = null;
+      switch (op) {
+        case 0: {
+          var nzp = (ir >> 9) & 7;
+          if (nzp) {
+            if (nzp & cc) { npc = (npc + sext(ir, 9)) & 0xFFFF; s.note = "branch taken"; }
+            else s.note = "branch not taken";
+          }
+          break;
+        }
+        case 1: case 5: {
+          var b = ir & 0x20 ? sext(ir, 5) & 0xFFFF : R[ir & 7];
+          setR(dr, op === 1 ? R[sr1] + b : R[sr1] & b, true);
+          break;
+        }
+        case 9: setR(dr, ~R[sr1], true); break;
+        case 2: setR(dr, rd(npc + sext(ir, 9)), true); break;
+        case 10: setR(dr, rd(rd(npc + sext(ir, 9))), true); break;
+        case 6: setR(dr, rd(R[sr1] + sext(ir, 6)), true); break;
+        case 14: setR(dr, npc + sext(ir, 9), false); break;
+        case 3: wr(npc + sext(ir, 9), R[dr]); break;
+        case 11: wr(rd(npc + sext(ir, 9)), R[dr]); break;
+        case 7: wr(R[sr1] + sext(ir, 6), R[dr]); break;
+        case 4: {
+          var target = ir & 0x800 ? npc + sext(ir, 11) : R[sr1]; // read BaseR before R7 is written
+          setR(7, npc, false); npc = target & 0xFFFF;
+          break;
+        }
+        case 12: npc = R[sr1]; break;
+        case 8: stop = { reason: "error", msg: "RTI in user mode: privilege mode exception" }; break;
+        case 13: stop = { reason: "error", msg: "Illegal opcode (1101) at " + hex4(pc) }; break;
+        case 15: {
+          var vec = ir & 0xFF;
+          if (vec === 0x20 || vec === 0x23) {
+            if (inPos >= input.length) { stop = { reason: "input", msg: "Waiting for keyboard input (" + (vec === 0x20 ? "GETC" : "IN") + ")" }; break; }
+            var ch = input.charCodeAt(inPos++) & 0xFF;
+            setR(7, npc, false);
+            if (vec === 0x23) { "Input a character> ".split("").forEach(function (c) { emit(c.charCodeAt(0)); }); emit(ch); emit(10); }
+            setR(0, ch, false);
+            s.note = "read " + (ch === 10 ? "'\\n'" : ch >= 32 && ch < 127 ? "'" + String.fromCharCode(ch) + "'" : "x" + ch.toString(16).toUpperCase());
+          } else if (vec === 0x21) {
+            setR(7, npc, false); emit(R[0]);
+          } else if (vec === 0x22 || vec === 0x24) {
+            setR(7, npc, false);
+            for (var a = R[0], guard = 0; guard < 65536; guard++, a = (a + 1) & 0xFFFF) {
+              var wv = rd(a); if (!wv) break;
+              if (vec === 0x22) emit(wv);
+              else { emit(wv & 0xFF); if (!(wv >> 8)) break; emit(wv >> 8); }
+            }
+          } else if (vec === 0x25) {
+            setR(7, npc, false); s.note = "halt"; end = { reason: "halt", msg: "Halted" };
+          } else {
+            stop = { reason: "error", msg: "TRAP x" + vec.toString(16).toUpperCase().padStart(2, "0") + " has no service routine" };
+          }
+          break;
+        }
+      }
+      if (stop) { end = stop; break; } // the faulting instruction is not recorded as a step
+      if (!addrLine.hasOwnProperty(pc)) fetched[pc] = 1;
+      s.pcNew = npc; pc = npc;
+      out += s.out; s.outLen = out.length;
+      steps.push(s);
+    }
+    return {
+      steps: steps, end: end, output: out, initMem: initMem, initRegs: [0, 0, 0, 0, 0, 0, 0, 0], initPc: start, initCc: CC_Z,
+      touched: Object.keys(touched).map(Number), fetched: Object.keys(fetched).map(Number), addrLine: addrLine, inputUsed: inPos
+    };
+  }
+
+  // Object file: big-endian 16-bit words, first word = origin (one per segment)
+  function objBytes(seg) {
+    var out = new Uint8Array((seg.words.length + 1) * 2);
+    out[0] = seg.start >> 8; out[1] = seg.start & 0xFF;
+    seg.words.forEach(function (w, i) { out[2 + 2 * i] = w.value >> 8; out[3 + 2 * i] = w.value & 0xFF; });
+    return out;
+  }
+
+  return { assemble: assemble, tokenize: tokenize, parseNum: parseNum, parseReg: parseReg,
+           isMnemonic: isMnemonic, isBranch: isBranch, TRAPS: TRAPS, DIRECTIVES: DIRECTIVES, hex4: hex4, objBytes: objBytes,
+           disasm: disasm, simulate: simulate, sext: sext };
+})();
+if (typeof module !== "undefined") module.exports = LC3;
+</script>
+
+<!-- ===================== UI ===================== -->
+<script>
+"use strict";
+(function () {
+  var EXAMPLES = {
+    "Hello, world": [
+      "; Print a greeting and halt",
+      "        .ORIG x3000",
+      "        LEA   R0, MSG      ; R0 <- address of string",
+      "        PUTS               ; print it",
+      "        HALT",
+      "MSG     .STRINGZ \"Hello, LC-3!\\n\"",
+      "        .END"
+    ],
+    "Multiply (loop)": [
+      "; R3 <- A * B using repeated addition",
+      "        .ORIG x3000",
+      "        LD    R1, A        ; R1 = A",
+      "        LD    R2, B        ; R2 = B (counter)",
+      "        AND   R3, R3, #0   ; R3 = 0",
+      "        ADD   R2, R2, #0",
+      "        BRz   DONE",
+      "LOOP    ADD   R3, R3, R1",
+      "        ADD   R2, R2, #-1",
+      "        BRp   LOOP",
+      "DONE    ST    R3, RESULT",
+      "        HALT",
+      "A       .FILL #6",
+      "B       .FILL #7",
+      "RESULT  .BLKW 1",
+      "        .END"
+    ],
+    "Sum an array": [
+      "; Sum N numbers stored at ARRAY, result in R0",
+      "        .ORIG x3000",
+      "        AND   R0, R0, #0   ; sum = 0",
+      "        LEA   R1, ARRAY    ; R1 = pointer",
+      "        LD    R2, N        ; R2 = count",
+      "AGAIN   BRz   STORE",
+      "        LDR   R3, R1, #0   ; R3 = *ptr",
+      "        ADD   R0, R0, R3",
+      "        ADD   R1, R1, #1",
+      "        ADD   R2, R2, #-1",
+      "        BR    AGAIN",
+      "STORE   STI   R0, OUTPTR",
+      "        HALT",
+      "N       .FILL #5",
+      "OUTPTR  .FILL x4000",
+      "ARRAY   .FILL #3",
+      "        .FILL #-1",
+      "        .FILL #10",
+      "        .FILL x20",
+      "        .FILL b101",
+      "        .END"
+    ],
+    "Subroutine + echo": [
+      "; Read characters and echo them in upper case until Enter",
+      "        .ORIG x3000",
+      "MAIN    GETC",
+      "        ADD   R1, R0, #-10   ; newline?",
+      "        BRz   FINISH",
+      "        JSR   TOUPPER",
+      "        OUT",
+      "        BR    MAIN",
+      "FINISH  HALT",
+      "",
+      "; R0 <- toupper(R0)   (clobbers R1)",
+      "TOUPPER LD    R1, NEG_a",
+      "        ADD   R1, R0, R1     ; R0 - 'a'",
+      "        BRn   TU_RET",
+      "        LD    R1, NEG_z",
+      "        ADD   R1, R0, R1     ; R0 - 'z'",
+      "        BRp   TU_RET",
+      "        LD    R1, MINUS32",
+      "        ADD   R0, R0, R1",
+      "TU_RET  RET",
+      "",
+      "NEG_a   .FILL #-97",
+      "NEG_z   .FILL #-122",
+      "MINUS32 .FILL #-32",
+      "        .END"
+    ],
+    "Every instruction": [
+      "; One of each LC-3 instruction, to see every encoding",
+      "        .ORIG x3000",
+      "TOP     ADD   R1, R2, R3",
+      "        ADD   R1, R2, #-5",
+      "        AND   R4, R5, R6",
+      "        AND   R4, R5, #15",
+      "        NOT   R7, R0",
+      "        BRnzp TOP",
+      "        BRn   TOP",
+      "        BRzp  DATA",
+      "        JMP   R2",
+      "        RET",
+      "        JSR   TOP",
+      "        JSRR  R3",
+      "        LD    R0, DATA",
+      "        LDI   R1, DATA",
+      "        LDR   R2, R6, #-3",
+      "        LEA   R3, DATA",
+      "        ST    R4, DATA",
+      "        STI   R5, DATA",
+      "        STR   R6, R5, #31",
+      "        TRAP  x25",
+      "        RTI",
+      "        GETC",
+      "        OUT",
+      "        PUTS",
+      "        IN",
+      "        PUTSP",
+      "        HALT",
+      "DATA    .FILL xBEEF",
+      "BUF     .BLKW #3",
+      "MSG     .STRINGZ \"ok\"",
+      "        .END"
+    ],
+    "Errors demo": [
+      "; This program has mistakes on purpose",
+      "        .ORIG x3000",
+      "        ADD   R1, R2, #20    ; imm5 out of range",
+      "        LD    R8, VALUE      ; no register R8",
+      "        BRz   NOWHERE        ; undefined label",
+      "        MOV   R1, R2         ; not an LC-3 instruction",
+      "VALUE   .FILL #1",
+      "VALUE   .FILL #2            ; duplicate label",
+      "        .END"
+    ]
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var src = $("src"), code = $("code"), gutter = $("gutter"), diagEl = $("diag");
+  var vMem = $("vMem"), vSym = $("vSym"), vOut = $("vOut");
+  var statusEl = $("status"), tip = $("tip");
+  var result = null, hlLine = -1;
+
+  // ---------- persistence ----------
+  function store(k, v) { try { localStorage.setItem("lc3x." + k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem("lc3x." + k); } catch (e) { return null; } }
+
+  function b64encode(s) { var bytes = new TextEncoder().encode(s), bin = ""; bytes.forEach(function (b) { bin += String.fromCharCode(b); }); return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function b64decode(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); var bin = atob(s), bytes = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return new TextDecoder().decode(bytes); }
+
+  // ---------- theme ----------
+  var theme = load("theme");
+  if (theme) document.documentElement.setAttribute("data-theme", theme);
+  $("btnTheme").onclick = function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    var dark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    var next = dark ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next); store("theme", next);
+  };
+
+  // ---------- examples ----------
+  var exSel = $("examples");
+  Object.keys(EXAMPLES).forEach(function (k) { var o = document.createElement("option"); o.value = k; o.textContent = k; exSel.appendChild(o); });
+  exSel.onchange = function () {
+    if (!exSel.value) return;
+    setSource(EXAMPLES[exSel.value].join("\n") + "\n");
+    exSel.value = "";
+  };
+
+  // ---------- options ----------
+  ["optColor", "optBin", "optDec"].forEach(function (id) {
+    var v = load(id); if (v !== null) $(id).checked = v === "1";
+    $(id).onchange = function () { store(id, $(id).checked ? "1" : "0"); render(); };
+  });
+
+  // ---------- tabs ----------
+  document.querySelectorAll("#right .tab").forEach(function (t) {
+    t.onclick = function () {
+      document.querySelectorAll("#right .tab").forEach(function (x) { x.classList.toggle("on", x === t); });
+      [vMem, vSym, vOut].forEach(function (v) { v.hidden = v.id !== t.dataset.view; });
+      $("legend").style.display = t.dataset.view === "vMem" ? "" : "none";
+    };
+  });
+
+  // ---------- splitter ----------
+  (function () {
+    var sp = $("splitter"), left = $("left"), dragging = false;
+    var saved = load("split2"); if (saved) left.style.flexBasis = saved;
+    sp.addEventListener("pointerdown", function (e) { dragging = true; sp.classList.add("drag"); sp.setPointerCapture(e.pointerId); });
+    sp.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      var pct = Math.min(80, Math.max(20, e.clientX / window.innerWidth * 100));
+      left.style.flexBasis = pct + "%";
+    });
+    sp.addEventListener("pointerup", function () { dragging = false; sp.classList.remove("drag"); store("split2", left.style.flexBasis); });
+  })();
+
+  // ---------- syntax highlight ----------
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function highlightLine(line) {
+    var out = "", i = 0, n = line.length, first = true;
+    while (i < n) {
+      var c = line[i];
+      if (c === ";") { out += '<span class="t-c">' + esc(line.slice(i)) + "</span>"; break; }
+      if (c === '"') {
+        var j = i + 1;
+        while (j < n && line[j] !== '"') { if (line[j] === "\\") j++; j++; }
+        j = Math.min(n, j + 1);
+        out += '<span class="t-str">' + esc(line.slice(i, j)) + "</span>"; i = j; first = false; continue;
+      }
+      if (/[\s,]/.test(c)) { var k = i; while (k < n && /[\s,]/.test(line[k])) k++; out += esc(line.slice(i, k)); i = k; continue; }
+      var e = i; while (e < n && !/[\s,;"]/.test(line[e])) e++;
+      var w = line.slice(i, e), u = w.toUpperCase(), cls = "";
+      if (LC3.DIRECTIVES[u]) cls = "t-dir";
+      else if (LC3.TRAPS.hasOwnProperty(u)) cls = "t-trap";
+      else if (LC3.isMnemonic(w)) cls = "t-op";
+      else if (LC3.parseReg(w) !== null) cls = "t-reg";
+      else if (LC3.parseNum(w) !== null) cls = "t-num";
+      else cls = first ? "t-lab" : "t-lab";
+      out += '<span class="' + cls + '">' + esc(w) + "</span>";
+      i = e; first = false;
+    }
+    return out || "​";
+  }
+
+  // per-line colour (godbolt-style): only lines that emit words get a hue
+  function lineHue(ln) { return (ln * 137.508) % 360; }
+  function lineBg(ln) {
+    if (!$("optColor").checked || !result || result.lineAddr[ln] === null || result.lineAddr[ln] === undefined) return "";
+    return "background:hsla(" + lineHue(ln).toFixed(0) + ",70%,55%,var(--line-a))";
+  }
+
+  // ---------- editor rendering ----------
+  function renderEditor() {
+    var lines = src.value.split("\n");
+    var errLines = {}, warnLines = {};
+    if (result) result.diags.forEach(function (d) { (d.sev === "error" ? errLines : warnLines)[d.line] = true; });
+    var h = "", g = "";
+    for (var i = 0; i < lines.length; i++) {
+      var cls = "l" + (i === hlLine ? " hl" : "") + (errLines[i] ? " err" : "");
+      h += '<div class="' + cls + '" style="' + lineBg(i) + '">' + highlightLine(lines[i]) + "</div>";
+      var a = result && result.lineAddr[i] !== null && result.lineAddr[i] !== undefined ? LC3.hex4(result.lineAddr[i]) : "";
+      g += '<div class="g' + (errLines[i] ? " err" : warnLines[i] ? " warn" : "") + (i === hlLine ? " cur" : "") + '"><span>' + (i + 1) + '</span><span class="ga">' + a + "</span></div>";
+    }
+    code.innerHTML = h;
+    gutter.innerHTML = g;
+    syncScroll();
+    if (typeof markExec === "function") markExec();
+  }
+  function syncScroll() {
+    code.style.transform = "translate(" + (-src.scrollLeft) + "px," + (-src.scrollTop) + "px)";
+    gutter.scrollTop = src.scrollTop;
+  }
+  src.addEventListener("scroll", syncScroll);
+
+  // ---------- memory table ----------
+  function binHTML(w) {
+    var bits = w.value.toString(2).padStart(16, "0"), pos = 0, h = "";
+    w.fields.forEach(function (f) {
+      var chunk = bits.substr(pos, f[0]); pos += f[0];
+      if (f[1] === "data") chunk = chunk.replace(/(.{4})(?=.)/g, "$1 ");
+      h += '<span class="f-' + f[1] + '">' + chunk + "</span>";
+    });
+    return '<span class="bits">' + h + "</span>";
+  }
+  function signed(v) { return v & 0x8000 ? v - 0x10000 : v; }
+
+  function renderMemory() {
+    if (!result || !result.words.length) {
+      vMem.innerHTML = '<div class="empty">' + (result && result.errors ? "Fix the errors on the left to see the memory image." : "Write some LC-3 assembly on the left, starting with <span class=mono>.ORIG x3000</span>.") + "</div>";
+      return;
+    }
+    var showBin = $("optBin").checked, showDec = $("optDec").checked;
+    var h = '<table class="mem"><thead><tr><th>Address</th><th>Hex</th>' + (showBin ? "<th>Binary</th>" : "") + (showDec ? "<th>Dec</th>" : "") + "<th>Label</th><th>Contents</th><th style='text-align:right'>Line</th></tr></thead><tbody>";
+    var colspan = 5 + (showBin ? 1 : 0) + (showDec ? 1 : 0);
+    result.segments.forEach(function (seg, si) {
+      var end = seg.words.length ? (seg.start + seg.words.length - 1) & 0xFFFF : seg.start;
+      h += '<tr class="seg"><td colspan="' + colspan + '">.ORIG ' + LC3.hex4(seg.start) + " &nbsp;·&nbsp; " + seg.words.length + " word" + (seg.words.length === 1 ? "" : "s") + (seg.words.length ? " &nbsp;·&nbsp; " + LC3.hex4(seg.start) + "–" + LC3.hex4(end) : "") + "</td></tr>";
+      var ws = seg.words;
+      for (var i = 0; i < ws.length; i++) {
+        var w = ws[i];
+        // collapse long .BLKW runs
+        if (w.kind === "blkw") {
+          var j = i; while (j + 1 < ws.length && ws[j + 1].line === w.line) j++;
+          var cnt = j - i + 1;
+          if (cnt > 6) {
+            h += rowHTML(w, showBin, showDec, i);
+            h += '<tr class="row" data-line="' + w.line + '" data-i="' + (i + 1) + '" style="' + lineBg(w.line) + '"><td class="addr">' + LC3.hex4(ws[i + 1].addr) + "–" + LC3.hex4(ws[j].addr).slice(1) + '</td><td class="hex" colspan="' + (1 + (showBin ? 1 : 0) + (showDec ? 1 : 0)) + '" style="color:var(--muted)">… ' + (cnt - 1) + " more words of " + LC3.hex4(w.value) + '</td><td></td><td></td><td class="lnum">' + (w.line + 1) + "</td></tr>";
+            i = j; continue;
+          }
+        }
+        h += rowHTML(w, showBin, showDec, i);
+      }
+    });
+    h += "</tbody></table>";
+    vMem.innerHTML = h;
+    // index for tooltips
+    vMem._words = result.words;
+    applyRowHighlight(false);
+    if (typeof markExec === "function") markExec();
+  }
+  function rowHTML(w, showBin, showDec) {
+    var idx = w.idx;
+    return '<tr class="row" data-line="' + w.line + '" data-w="' + idx + '" style="' + lineBg(w.line) + '">' +
+      '<td class="addr">' + LC3.hex4(w.addr) + "</td>" +
+      '<td class="hex">' + LC3.hex4(w.value) + "</td>" +
+      (showBin ? "<td>" + binHTML(w) + "</td>" : "") +
+      (showDec ? '<td class="mono">' + signed(w.value) + "</td>" : "") +
+      '<td class="lab">' + (w.label ? esc(w.label) : "") + "</td>" +
+      '<td class="ins">' + esc(w.text) + (w.note ? '<span class="note">' + esc(w.note) + "</span>" : "") + "</td>" +
+      '<td class="lnum">' + (w.line + 1) + "</td></tr>";
+  }
+
+  function renderSymbols() {
+    if (!result || !result.symbols.length) { vSym.innerHTML = '<div class="empty">No labels defined.</div>'; return; }
+    var h = '<table class="sym"><thead><tr><th>Label</th><th>Address</th><th>Line</th></tr></thead><tbody>';
+    result.symbols.slice().sort(function (a, b) { return a.addr - b.addr; }).forEach(function (s) {
+      h += '<tr data-line="' + s.line + '"><td style="color:var(--s-label)">' + esc(s.name) + '</td><td style="color:var(--accent)">' + LC3.hex4(s.addr) + "</td><td>" + (s.line + 1) + "</td></tr>";
+    });
+    vSym.innerHTML = h + "</tbody></table>";
+  }
+
+  function hexListing() {
+    return result.segments.map(function (seg) {
+      return "; segment " + LC3.hex4(seg.start) + "\n" + [seg.start].concat(seg.words.map(function (w) { return w.value; }))
+        .map(function (v) { return v.toString(16).toUpperCase().padStart(4, "0"); }).join("\n");
+    }).join("\n\n");
+  }
+  function binListing() {
+    return result.segments.map(function (seg) {
+      return [seg.start].concat(seg.words.map(function (w) { return w.value; })).map(function (v) { return v.toString(2).padStart(16, "0"); }).join("\n");
+    }).join("\n\n");
+  }
+  function symListing() {
+    return "// Symbol table\n// Scope level 0:\n//\tSymbol Name       Page Address\n//\t----------------  ------------\n" +
+      result.symbols.map(function (s) { return "//\t" + s.name.padEnd(16) + "  " + s.addr.toString(16).toUpperCase().padStart(4, "0"); }).join("\n") + "\n";
+  }
+
+  function renderOutput() {
+    if (!result || !result.words.length || result.errors) {
+      vOut.innerHTML = '<div class="empty">' + (result && result.errors ? "Output is available once the program assembles without errors." : "Nothing assembled yet.") + "</div>";
+      return;
+    }
+    var multi = result.segments.length > 1;
+    vOut.innerHTML = '<div class="outbox">' +
+      '<div class="row2"><button data-dl="obj">Download .obj</button><button data-dl="hex">Download .hex</button><button data-dl="bin">Download .bin</button><button data-dl="sym">Download .sym</button><button data-copy="hex">Copy hex</button></div>' +
+      "<p>The .obj file is big-endian 16-bit words, first word = origin" + (multi ? " (one .obj per .ORIG block)" : "") + ".</p>" +
+      "<pre>" + esc(hexListing()) + "</pre></div>";
+  }
+
+  vOut.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b || !result) return;
+    if (b.dataset.copy) { copy(hexListing(), b); return; }
+    var kind = b.dataset.dl;
+    if (kind === "obj") result.segments.forEach(function (seg) {
+      download(new Blob([LC3.objBytes(seg)], { type: "application/octet-stream" }), "program" + (result.segments.length > 1 ? "_" + LC3.hex4(seg.start) : "") + ".obj");
+    });
+    if (kind === "hex") download(new Blob([hexListing() + "\n"], { type: "text/plain" }), "program.hex");
+    if (kind === "bin") download(new Blob([binListing() + "\n"], { type: "text/plain" }), "program.bin");
+    if (kind === "sym") download(new Blob([symListing()], { type: "text/plain" }), "program.sym");
+  });
+  function download(blob, name) {
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function copy(text, btn) {
+    var done = function () { var t = btn.textContent; btn.textContent = "Copied ✓"; setTimeout(function () { btn.textContent = t; }, 1200); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) { var t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch (e) {} t.remove(); }
+
+  function renderDiags() {
+    if (!result || !result.diags.length) { diagEl.innerHTML = ""; return; }
+    diagEl.innerHTML = result.diags.map(function (d) {
+      return '<div class="d ' + d.sev + '" data-line="' + d.line + '"><span class="k">' + d.sev + '</span><span class="ln">line ' + (d.line + 1) + "</span><span>" + esc(d.msg) + "</span></div>";
+    }).join("");
+  }
+  function renderStatus() {
+    if (!result) return;
+    var e = result.errors, w = result.warnings;
+    statusEl.className = "status" + (e ? " bad" : w ? " warn" : "");
+    statusEl.textContent = e ? e + " error" + (e > 1 ? "s" : "") + (w ? ", " + w + " warning" + (w > 1 ? "s" : "") : "")
+      : result.words.length + " words assembled" + (w ? " · " + w + " warning" + (w > 1 ? "s" : "") : "");
+  }
+
+  function render() { renderEditor(); renderMemory(); renderSymbols(); renderOutput(); renderDiags(); renderStatus(); }
+
+  // ---------- assemble (debounced) ----------
+  var timer = null;
+  function run() { result = LC3.assemble(src.value); simActive = false; render(); buildSim(0); store("src", src.value); }
+  function schedule() { clearTimeout(timer); renderEditor(); timer = setTimeout(run, 150); }
+  src.addEventListener("input", schedule);
+
+  function setSource(text) { src.value = text; src.scrollTop = 0; hlLine = -1; run(); }
+
+  // ---------- editor keys ----------
+  src.addEventListener("keydown", function (e) {
+    if (e.key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      var s = src.selectionStart, en = src.selectionEnd, v = src.value;
+      if (s === en && !e.shiftKey) {
+        // insert spaces to next 8-column stop
+        var col = s - (v.lastIndexOf("\n", s - 1) + 1), pad = 8 - (col % 8);
+        insertText(" ".repeat(pad));
+      } else {
+        var ls = v.lastIndexOf("\n", s - 1) + 1, block = v.slice(ls, en);
+        var nb = e.shiftKey ? block.replace(/^( {1,8}|\t)/gm, "") : block.replace(/^/gm, "        ");
+        src.setSelectionRange(ls, en); insertText(nb);
+        src.setSelectionRange(ls, ls + nb.length);
+      }
+    }
+  });
+  function insertText(t) {
+    if (!document.execCommand || !document.execCommand("insertText", false, t)) {
+      var s = src.selectionStart; src.setRangeText(t, s, src.selectionEnd, "end"); schedule();
+    }
+  }
+
+  // ---------- cross-highlighting ----------
+  function currentLine() { return src.value.slice(0, src.selectionStart).split("\n").length - 1; }
+  function updateCursor() {
+    var ln = currentLine(), col = src.selectionStart - (src.value.lastIndexOf("\n", src.selectionStart - 1) + 1);
+    $("cursorPos").textContent = "Ln " + (ln + 1) + ", Col " + (col + 1);
+    if (ln !== hlLine) { hlLine = ln; renderEditor(); applyRowHighlight(true); }
+  }
+  ["keyup", "click", "focus", "select"].forEach(function (ev) { src.addEventListener(ev, updateCursor); });
+  document.addEventListener("selectionchange", function () { if (document.activeElement === src) updateCursor(); });
+
+  function applyRowHighlight(scroll) {
+    var first = null;
+    vMem.querySelectorAll("tr.row").forEach(function (tr) {
+      var on = +tr.dataset.line === hlLine;
+      tr.classList.toggle("hl", on);
+      if (on && !first) first = tr;
+    });
+    if (scroll && first && !vMem.hidden) {
+      var r = first.getBoundingClientRect(), vr = vMem.getBoundingClientRect();
+      if (r.top < vr.top + 30 || r.bottom > vr.bottom) vMem.scrollTop += r.top - vr.top - vr.height / 3;
+    }
+  }
+
+  function gotoLine(ln) {
+    var lines = src.value.split("\n"), pos = 0;
+    for (var i = 0; i < ln && i < lines.length; i++) pos += lines[i].length + 1;
+    src.focus({ preventScroll: true });
+    src.setSelectionRange(pos, pos);
+    var top = ln * 20, h = src.clientHeight;
+    if (top < src.scrollTop || top > src.scrollTop + h - 40) src.scrollTop = Math.max(0, top - h / 3);
+    syncScroll(); updateCursor();
+  }
+  [vMem, vSym, diagEl].forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      var t = e.target.closest("[data-line]"); if (t) gotoLine(+t.dataset.line);
+    });
+  });
+
+  // hovering a memory row lights up its source line
+  vMem.addEventListener("mouseover", function (e) {
+    var tr = e.target.closest("tr.row");
+    code.querySelectorAll(".l.peek").forEach(function (l) { l.classList.remove("peek", "hl"); });
+    if (!tr) return;
+    var l = code.children[+tr.dataset.line];
+    if (l && !l.classList.contains("hl")) l.classList.add("peek", "hl");
+  });
+  vMem.addEventListener("mouseleave", function () { code.querySelectorAll(".l.peek").forEach(function (l) { l.classList.remove("peek", "hl"); }); tip.style.display = "none"; });
+
+  // bit-field tooltip
+  vMem.addEventListener("mousemove", function (e) {
+    var bits = e.target.closest(".bits"), tr = e.target.closest("tr.row");
+    if (!bits || !tr || tr.dataset.w === undefined) { tip.style.display = "none"; return; }
+    var w = result.words[+tr.dataset.w]; if (!w) return;
+    var bstr = w.value.toString(2).padStart(16, "0"), pos = 0, hi = 15, rows = "";
+    w.fields.forEach(function (f) {
+      var lo = hi - f[0] + 1;
+      rows += '<tr><td class="f-' + f[1] + '">' + bstr.substr(pos, f[0]) + '</td><td style="color:var(--muted)">[' + (f[0] > 1 ? hi + ":" + lo : hi) + "]</td><td>" + esc(f[2]) + "</td></tr>";
+      pos += f[0]; hi = lo - 1;
+    });
+    var extra = w.kind === "ins" ? "" : '<tr><td colspan="3" style="color:var(--muted)">unsigned ' + w.value + " · signed " + signed(w.value) + "</td></tr>";
+    tip.innerHTML = '<div class="h">' + LC3.hex4(w.addr) + ": " + LC3.hex4(w.value) + "  " + esc(w.text || "") + "</div><table>" + rows + extra + "</table>";
+    tip.style.display = "block";
+    var x = e.clientX + 14, y = e.clientY + 16, tw = tip.offsetWidth, th = tip.offsetHeight;
+    if (x + tw > innerWidth - 8) x = e.clientX - tw - 14;
+    if (y + th > innerHeight - 8) y = e.clientY - th - 12;
+    tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+  });
+
+  // ===================== machine / simulator pane =====================
+  var MAX_STEPS = 10000;
+  var sim = null, st = null, simT = 0, simActive = false, playTimer = null, symAt = {};
+  var memRows = [], memRowByAddr = {}, traceRows = [];
+  var sMem = $("sMem"), sTrace = $("sTrace"), sCon = $("sCon"), simIn = $("simIn"), tRange = $("tRange");
+  var simBadge = $("simBadge"), simNow = $("simNow"), regsEl = $("regs"), conOut = $("conOut");
+
+  function chr(c) { c &= 0xFF; return c === 10 ? "\\n" : c === 9 ? "\\t" : c === 0 ? "" : c >= 32 && c < 127 ? String.fromCharCode(c) : ""; }
+  function ccName(c) { return c === 4 ? "N" : c === 2 ? "Z" : c === 1 ? "P" : "?"; }
+
+  // sim pane tabs
+  document.querySelectorAll("#sim .stab").forEach(function (t) {
+    t.onclick = function () {
+      document.querySelectorAll("#sim .stab").forEach(function (x) { x.classList.toggle("on", x === t); });
+      [sMem, sTrace, sCon].forEach(function (v) { v.hidden = v.id !== t.dataset.view; });
+      if (t.dataset.view === "sCon") $("conDot").hidden = true;
+      followScroll();
+    };
+  });
+  function showSimTab(id) { document.querySelector('#sim .stab[data-view="' + id + '"]').click(); }
+
+  // second splitter: width of the machine pane
+  (function () {
+    var sp = $("splitter2"), pane = $("sim"), dragging = false;
+    var saved = load("simw"); if (saved) pane.style.flexBasis = saved;
+    sp.addEventListener("pointerdown", function (e) { dragging = true; sp.classList.add("drag"); sp.setPointerCapture(e.pointerId); });
+    sp.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      pane.style.flexBasis = Math.min(760, Math.max(300, window.innerWidth - e.clientX)) + "px";
+    });
+    sp.addEventListener("pointerup", function () { dragging = false; sp.classList.remove("drag"); store("simw", pane.style.flexBasis); });
+  })();
+
+  var speedSel = $("simSpeed");
+  speedSel.value = load("speed") || "4";
+  speedSel.onchange = function () { store("speed", speedSel.value); if (playTimer) { stopPlay(); play(); } };
+  ["optFollow"].forEach(function (id) {
+    var v = load(id); if (v !== null) $(id).checked = v === "1";
+    $(id).onchange = function () { store(id, $(id).checked ? "1" : "0"); followScroll(); };
+  });
+  simIn.value = load("stdin") || "";
+
+  // ---------- build the trace (re-run whenever the program or input changes) ----------
+  function buildSim(keepT) {
+    var wasPlaying = !!playTimer;
+    stopPlay(true);
+    if (!result || result.errors || !result.words.length) { sim = null; st = null; simT = 0; renderSimEmpty(); markExec(); return; }
+    symAt = {};
+    result.symbols.forEach(function (s) { if (!symAt.hasOwnProperty(s.addr)) symAt[s.addr] = s.name; });
+    sim = LC3.simulate(result, { input: simIn.value, maxSteps: MAX_STEPS, symAt: symAt });
+    st = { regs: sim.initRegs.slice(), mem: new Uint16Array(sim.initMem), pc: sim.initPc, cc: sim.initCc };
+    simT = 0;
+    buildMemTable();
+    buildTrace();
+    tRange.max = sim.steps.length;
+    $("tMax").textContent = "of " + sim.steps.length;
+    goTo(keepT ? Math.min(keepT, sim.steps.length) : 0);
+    if (wasPlaying && simT < sim.steps.length) play();
+  }
+
+  function renderSimEmpty() {
+    var msg = result && result.errors ? "Fix the errors on the left to run the program." : "Nothing to run yet.";
+    simBadge.className = "status"; simBadge.textContent = "not run";
+    simNow.innerHTML = '<span class="k">State</span><span class="v">' + msg + "</span>";
+    tRange.max = 0; tRange.value = 0; $("tLabel").textContent = "t = 0"; $("tMax").textContent = "of 0";
+    renderRegs(null);
+    sMem.innerHTML = sTrace.innerHTML = '<div class="sim-empty">' + msg + "</div>";
+    conOut.textContent = ""; $("inUsed").textContent = "";
+    ["bReset", "bBack", "bPlay", "bStep", "bEnd"].forEach(function (id) { $(id).disabled = true; });
+  }
+
+  // memory rows: the program image plus every address the run touches, with gaps marked
+  function buildMemTable() {
+    var set = {};
+    result.words.forEach(function (w) { set[w.addr] = w; });
+    sim.touched.forEach(function (a) { if (!set[a]) set[a] = true; });
+    if (sim.fetched.length <= 256) sim.fetched.forEach(function (a) { if (!set[a]) set[a] = true; });
+    var addrs = Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+    var h = '<table class="rmem"><thead><tr><th></th><th>Address</th><th>Value</th><th style="text-align:right">Dec</th><th>Label</th><th>Source / note</th></tr></thead><tbody>';
+    for (var i = 0; i < addrs.length; i++) {
+      var a = addrs[i], w = set[a];
+      if (i && a !== addrs[i - 1] + 1) h += '<tr class="gap"><td colspan="6">⋯ ' + (a - addrs[i - 1] - 1) + " word" + (a - addrs[i - 1] - 1 === 1 ? "" : "s") + " not shown ⋯</td></tr>";
+      var srcTxt = w === true ? (sim.fetched.indexOf(a) >= 0 && sim.touched.indexOf(a) < 0 ? "executed" : "data used by program") : (w.text || (w.note ? w.note : ""));
+      h += '<tr data-a="' + a + '"' + (w !== true ? ' data-line="' + w.line + '"' : "") + '><td class="pm"></td><td class="ra">' + LC3.hex4(a) + '</td><td class="rv"></td><td class="rd"></td><td class="rl">' + (symAt[a] ? esc(symAt[a]) : "") + '</td><td class="rs" title="' + esc(srcTxt) + '">' + esc(srcTxt) + "</td></tr>";
+    }
+    sMem.innerHTML = h + "</tbody></table>";
+    memRows = []; memRowByAddr = {};
+    sMem.querySelectorAll("tr[data-a]").forEach(function (tr) {
+      var a = +tr.dataset.a, r = { a: a, tr: tr, v: tr.children[2], d: tr.children[3], last: -1, cls: "" };
+      memRows.push(r); memRowByAddr[a] = r;
+    });
+  }
+
+  function effects(s) {
+    var p = [];
+    s.regs.forEach(function (r) { p.push("R" + r[0] + " ← " + LC3.hex4(r[2]) + " (" + signed(r[2]) + ")"); });
+    s.mem.forEach(function (m) { p.push("M[" + LC3.hex4(m[0]) + "] ← " + LC3.hex4(m[2])); });
+    if (s.cc) p.push("CC = " + ccName(s.cc[1]));
+    if (s.pcNew !== ((s.pc + 1) & 0xFFFF)) p.push("PC ← " + LC3.hex4(s.pcNew));
+    else if (s.note === "branch not taken") p.push("not taken");
+    if (s.out) p.push("print \"" + s.out.replace(/\n/g, "\\n") + "\"");
+    if (s.note && /^read /.test(s.note)) p.push(s.note);
+    return p.join(" · ");
+  }
+
+  function buildTrace() {
+    var steps = sim.steps, h = '<div class="trace"><div class="tr" data-t="0"><span class="t">0</span><span class="a"></span><span>start</span><span class="fx">PC = ' + LC3.hex4(sim.initPc) + ", all registers 0</span></div>";
+    for (var i = 0; i < steps.length; i++) {
+      var s = steps[i];
+      h += '<div class="tr" data-t="' + (i + 1) + '"><span class="t">' + (i + 1) + '</span><span class="a">' + LC3.hex4(s.pc) + "</span><span>" + esc(s.text) + '</span><span class="fx">' + esc(effects(s)) + "</span></div>";
+    }
+    h += '<div class="tr endrow">' + esc(endText()) + "</div></div>";
+    sTrace.innerHTML = h;
+    traceRows = Array.prototype.slice.call(sTrace.querySelectorAll(".tr[data-t]"));
+  }
+  function endText() {
+    var e = sim.end;
+    return e.reason === "halt" ? "■ Halted after " + sim.steps.length + " steps" : "■ " + e.msg + " after " + sim.steps.length + " steps";
+  }
+
+  // ---------- moving through time ----------
+  function fwd(s) {
+    s.regs.forEach(function (r) { st.regs[r[0]] = r[2]; });
+    s.mem.forEach(function (m) { st.mem[m[0]] = m[2]; });
+    if (s.cc) st.cc = s.cc[1];
+    st.pc = s.pcNew;
+  }
+  function back(s) {
+    for (var i = s.mem.length - 1; i >= 0; i--) st.mem[s.mem[i][0]] = s.mem[i][1];
+    for (var j = s.regs.length - 1; j >= 0; j--) st.regs[s.regs[j][0]] = s.regs[j][1];
+    if (s.cc) st.cc = s.cc[0];
+    st.pc = s.pc;
+  }
+  function goTo(t) {
+    if (!sim) return;
+    t = Math.max(0, Math.min(sim.steps.length, t | 0));
+    while (simT < t) fwd(sim.steps[simT++]);
+    while (simT > t) back(sim.steps[--simT]);
+    renderSimState();
+  }
+
+  function renderSimState() {
+    var n = sim.steps.length, last = simT > 0 ? sim.steps[simT - 1] : null, atEnd = simT === n;
+    tRange.value = simT;
+    $("tLabel").textContent = "t = " + simT;
+    // badge
+    var e = sim.end;
+    if (atEnd) {
+      simBadge.className = "status" + (e.reason === "halt" ? "" : e.reason === "input" ? " warn" : " bad");
+      simBadge.textContent = e.reason === "halt" ? "halted" : e.reason === "input" ? "needs input" : e.reason === "limit" ? "step limit" : "error";
+    } else {
+      simBadge.className = "status";
+      simBadge.textContent = playTimer ? "running" : simT === 0 ? "ready" : "paused";
+    }
+    // last / next
+    var h = "";
+    if (last) h += '<span class="k">Step ' + simT + '</span><span class="v"><span class="a">' + LC3.hex4(last.pc) + "</span>" + esc(last.text) + (effects(last) ? ' <span class="fx">→ ' + esc(effects(last)) + "</span>" : "") + "</span>";
+    else h += '<span class="k">Start</span><span class="v">registers cleared, PC = ' + LC3.hex4(sim.initPc) + "</span>";
+    if (atEnd) h += '<span class="k">End</span><span class="v"><span class="end ' + e.reason + '">' + esc(e.reason === "halt" ? "Program halted" : e.msg) + "</span>" +
+      (e.reason === "input" ? " — type in the Console tab, then press Play" : "") + "</span>";
+    else {
+      var nx = sim.steps[simT];
+      h += '<span class="k">Next</span><span class="v"><span class="a">' + LC3.hex4(nx.pc) + "</span>" + esc(nx.text) + (nx.line !== undefined ? ' <span style="color:var(--muted)">(line ' + (nx.line + 1) + ")</span>" : "") + "</span>";
+    }
+    simNow.innerHTML = h;
+    // buttons
+    $("bReset").disabled = $("bBack").disabled = simT === 0;
+    $("bStep").disabled = $("bEnd").disabled = atEnd;
+    $("bPlay").disabled = atEnd && simT === 0;
+    setPlayLabel();
+    renderRegs(last);
+    renderMemRows(last);
+    renderTraceCursor();
+    renderConsole();
+    markExec();
+    followScroll();
+  }
+
+  function renderRegs(last) {
+    var chg = {};
+    if (last) last.regs.forEach(function (r) { chg[r[0]] = true; });
+    var h = "";
+    for (var r = 0; r < 8; r++) {
+      var v = st ? st.regs[r] : 0;
+      h += '<div class="reg' + (chg[r] ? " chg" : "") + '" title="R' + r + " = " + LC3.hex4(v) + " = " + v + " unsigned = " + signed(v) + " signed\n" + v.toString(2).padStart(16, "0") + (chr(v) && v < 256 ? "\nASCII '" + chr(v) + "'" : "") + '">' +
+        '<span class="n">R' + r + '</span><span class="v">' + LC3.hex4(v) + '</span><span class="d">' + signed(v) + "</span></div>";
+    }
+    var pc = st ? st.pc : 0, ir = st && simT > 0 ? sim.steps[simT - 1].ir : 0, cc = st ? st.cc : 0;
+    h += '<div class="reg spec" title="Program counter: address of the next instruction"><span class="n">PC</span><span class="v">' + LC3.hex4(pc) + '</span><span class="d">' + (st && symAt[pc] ? esc(symAt[pc]) : "") + "</span></div>";
+    h += '<div class="reg spec" title="Instruction register: the instruction executed last"><span class="n">IR</span><span class="v">' + LC3.hex4(ir) + '</span><span class="d">' + (simT > 0 ? esc(sim.steps[simT - 1].text) : "") + "</span></div>";
+    h += '<div class="reg spec' + (last && last.cc && last.cc[0] !== last.cc[1] ? " chg" : "") + '" style="grid-column:1/-1" title="Condition codes, set by ADD, AND, NOT, LD, LDI, LDR"><span class="n">CC</span><span class="cc">' +
+      ["N", "Z", "P"].map(function (k, i) { return '<span class="' + (st && cc === (4 >> i) ? "on" : "") + '">' + k + "</span>"; }).join("") +
+      '</span><span class="d">' + (st ? "PSR " + LC3.hex4(0x8000 | cc) : "") + "</span></div>";
+    regsEl.innerHTML = h;
+  }
+
+  function renderMemRows(last) {
+    var rd = {}, wr = {};
+    if (last) { last.reads.forEach(function (a) { rd[a] = true; }); last.mem.forEach(function (m) { wr[m[0]] = true; }); }
+    for (var i = 0; i < memRows.length; i++) {
+      var r = memRows[i], a = r.a, v = st.mem[a];
+      if (r.last !== v) {
+        r.v.textContent = LC3.hex4(v);
+        var c = chr(v);
+        r.d.textContent = signed(v) + (c && v < 256 ? " '" + c + "'" : "");
+        r.last = v;
+      }
+      var cls = (a === st.pc ? "pc " : "") + (wr[a] ? "w " : rd[a] ? "r " : "") + (v !== sim.initMem[a] ? "mod" : "");
+      if (cls !== r.cls) { r.tr.className = cls; r.cls = cls; }
+    }
+  }
+
+  var lastCur = null;
+  function renderTraceCursor() {
+    if (lastCur) lastCur.classList.remove("cur");
+    lastCur = traceRows[simT] || null;
+    if (lastCur) lastCur.classList.add("cur");
+  }
+
+  function renderConsole() {
+    var outLen = simT > 0 ? sim.steps[simT - 1].outLen : 0, text = sim.output.slice(0, outLen);
+    conOut.innerHTML = esc(text) + '<span class="cur"></span>';
+    conOut.scrollTop = conOut.scrollHeight;
+    if (last_outLen !== outLen && outLen > 0 && sCon.hidden) $("conDot").hidden = false;
+    last_outLen = outLen;
+    var used = 0; for (var i = 0; i < simT; i++) if ((sim.steps[i].ir & 0xF0FF) === 0xF020 || (sim.steps[i].ir & 0xF0FF) === 0xF023) used++;
+    $("inUsed").textContent = simIn.value.length ? used + " of " + simIn.value.length + " input character" + (simIn.value.length === 1 ? "" : "s") + " consumed so far" : "";
+  }
+  var last_outLen = 0;
+
+  function followScroll() {
+    if (!sim || !$("optFollow").checked) return;
+    var view = !sMem.hidden ? sMem : !sTrace.hidden ? sTrace : null;
+    if (!view) return;
+    var el;
+    if (view === sMem) {
+      var last = simT > 0 ? sim.steps[simT - 1] : null;
+      var r = (last && last.mem.length && memRowByAddr[last.mem[0][0]]) || memRowByAddr[st.pc];
+      el = r && r.tr;
+    } else el = lastCur;
+    if (!el) return;
+    var er = el.getBoundingClientRect(), vr = view.getBoundingClientRect(), head = view === sMem ? 28 : 0;
+    if (er.top < vr.top + head || er.bottom > vr.bottom) view.scrollTop += er.top - vr.top - vr.height / 3;
+  }
+
+  // highlight the next instruction in the editor and in the assembly table
+  function markExec() {
+    var on = simActive && sim && st && !(simT === sim.steps.length && sim.end.reason === "halt");
+    var line = on && sim.addrLine.hasOwnProperty(st.pc) ? sim.addrLine[st.pc] : -1;
+    for (var i = 0; i < code.children.length; i++) {
+      code.children[i].classList.toggle("exec", i === line);
+      if (gutter.children[i]) gutter.children[i].classList.toggle("exec", i === line);
+    }
+    vMem.querySelectorAll("tr.row[data-w]").forEach(function (tr) {
+      var w = result && result.words[+tr.dataset.w];
+      tr.classList.toggle("exec", !!(on && w && w.addr === st.pc));
+    });
+  }
+
+  // ---------- controls ----------
+  function setPlayLabel() {
+    var b = $("bPlay");
+    b.innerHTML = playTimer
+      ? '<svg viewBox="0 0 16 16"><rect x="3" y="2.5" width="3.5" height="11"/><rect x="9.5" y="2.5" width="3.5" height="11"/></svg><span>Pause</span>'
+      : '<svg viewBox="0 0 16 16"><path d="M4 2.5v11L13.5 8z"/></svg><span>' + (sim && simT === sim.steps.length && simT > 0 ? "Replay" : "Play") + "</span>";
+  }
+  function activate() { if (!simActive) { simActive = true; } }
+  function play() {
+    if (!sim) return;
+    activate();
+    if (simT >= sim.steps.length) goTo(0);
+    var delay = 1000 / (+speedSel.value || 4);
+    function tick() {
+      if (simT >= sim.steps.length) { stopPlay(); return; }
+      goTo(simT + 1);
+      if (simT >= sim.steps.length) { stopPlay(); return; }
+      playTimer = setTimeout(tick, delay);
+    }
+    playTimer = setTimeout(tick, 0);
+    setPlayLabel();
+    simBadge.textContent = "running";
+  }
+  function stopPlay(silent) {
+    if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+    if (sim && !silent) {
+      renderSimState();
+      if (simT === sim.steps.length && sim.end.reason === "input") showSimTab("sCon"), simIn.focus();
+    }
+  }
+  $("bPlay").onclick = function () { if (playTimer) stopPlay(); else play(); };
+  $("bStep").onclick = function () { activate(); stopPlay(true); goTo(simT + 1); if (sim && simT === sim.steps.length && sim.end.reason === "input") { showSimTab("sCon"); simIn.focus(); } };
+  $("bBack").onclick = function () { activate(); stopPlay(true); goTo(simT - 1); };
+  $("bReset").onclick = function () { stopPlay(true); goTo(0); };
+  $("bEnd").onclick = function () { activate(); stopPlay(true); goTo(sim.steps.length); if (sim.end.reason === "input") { showSimTab("sCon"); simIn.focus(); } };
+  tRange.addEventListener("input", function () { activate(); stopPlay(true); goTo(+tRange.value); });
+  sTrace.addEventListener("click", function (e) {
+    var r = e.target.closest(".tr[data-t]"); if (!r) return;
+    activate(); stopPlay(true); goTo(+r.dataset.t);
+  });
+  sMem.addEventListener("click", function (e) {
+    var tr = e.target.closest("tr[data-line]"); if (tr) gotoLine(+tr.dataset.line);
+  });
+  var inTimer = null;
+  simIn.addEventListener("input", function () {
+    store("stdin", simIn.value);
+    clearTimeout(inTimer);
+    inTimer = setTimeout(function () { buildSim(simT); }, 200);
+  });
+  // keyboard: Space play/pause, ←/→ step, Home/End — only when not typing
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (!sim || e.ctrlKey || e.metaKey || e.altKey || t === src || t === simIn || /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) && t !== tRange) return;
+    if (e.key === " ") { if (t.tagName === "BUTTON") return; e.preventDefault(); $("bPlay").click(); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); if (!$("bStep").disabled) $("bStep").click(); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); if (!$("bBack").disabled) $("bBack").click(); }
+    else if (e.key === "Home") { e.preventDefault(); $("bReset").click(); }
+    else if (e.key === "End") { e.preventDefault(); if (!$("bEnd").disabled) $("bEnd").click(); }
+  });
+
+  // ---------- share link ----------
+  $("btnShare").onclick = function () {
+    var url = location.href.split("#")[0] + "#src=" + b64encode(src.value);
+    try { history.replaceState(null, "", url); } catch (e) {}
+    copy(url, $("btnShare"));
+  };
+
+  // ---------- init ----------
+  var initial = null;
+  var m = /#src=([A-Za-z0-9_-]+)/.exec(location.hash);
+  if (m) { try { initial = b64decode(m[1]); } catch (e) {} }
+  if (initial === null) initial = load("src");
+  if (initial === null || !initial.trim()) initial = EXAMPLES["Multiply (loop)"].join("\n") + "\n";
+  setSource(initial);
+  updateCursor();
+})();
+</script>
+</body>
+</html>
