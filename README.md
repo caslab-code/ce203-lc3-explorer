@@ -5,6 +5,12 @@ The page assembles your LC-3 program into machine code.
 The page also simulates the LC-3 computer.
 During the simulation, the page shows each change to the memory and to the registers.
 
+**Open the page in your browser:** [LC-3 Explorer](https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html)
+
+You do not need to download a file to use this link.
+
+![LC-3 Explorer. The source panel is on the left, the assembly panel is in the center, and the machine panel is on the right. The program is at step 9.](docs/screenshot.png)
+
 ## Function
 
 - The page changes LC-3 assembly code into 16-bit machine words.
@@ -57,15 +63,25 @@ This panel simulates the LC-3 computer. It shows the state of the computer at ea
 
 ## Procedure
 
+### Run the page without a download
+
+1. Open this link in a web browser: https://rawcdn.githack.com/caslab-code/ce203-lc3-explorer/f8a924e623b629ca540e215fbb8fdd7ac3a43866/lc3-explorer.html
+2. Go to step 3 below.
+
+### Run the page from a downloaded file
+
 1. Download the file `lc3-explorer.html`.
 2. Open the file in a web browser.
+
+### Use the page
+
 3. Write your LC-3 program in the source panel. You can also select a program from the **Examples** menu.
 4. Make sure that the program has no errors.
 5. Push the **Play** button in the machine panel to run the program.
 6. Push the **Step** button to execute one instruction.
 7. Look at the registers and the memory to see the changes.
 
-You do not need a server or an internet connection.
+The downloaded file does not need a server or an internet connection.
 
 ## Keyboard shortcuts
 
