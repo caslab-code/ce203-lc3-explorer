@@ -39,7 +39,7 @@
   --line-a: 0.10;
   /* simulator */
   --exec: #15803d;
-  --exec-soft: rgba(21,128,61,.16);
+  --exec-soft: rgba(21,128,61,.24);
   --chg: #c2410c;
   --chg-soft: rgba(194,65,12,.15);
   --rd-soft: rgba(47,111,223,.13);
@@ -55,7 +55,7 @@
     --s-str: #8fd17f; --s-label: #e6c07b; --s-trap: #ff7eb0;
     --f-op: #7aa8ff; --f-reg: #5fd3b3; --f-imm: #f5a35c; --f-off: #e08ae0; --f-flag: #ff7eb0;
     --f-zero: #5b6476; --f-data: #dde3ee; --line-a: 0.13;
-    --exec: #4ade80; --exec-soft: rgba(74,222,128,.15); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
+    --exec: #4ade80; --exec-soft: rgba(74,222,128,.22); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
   --spec-bg: #2a2540; --spec-border: #3d3560; --spec-name: #b9a2ff;
   }
 }
@@ -68,7 +68,7 @@
   --s-str: #8fd17f; --s-label: #e6c07b; --s-trap: #ff7eb0;
   --f-op: #7aa8ff; --f-reg: #5fd3b3; --f-imm: #f5a35c; --f-off: #e08ae0; --f-flag: #ff7eb0;
   --f-zero: #5b6476; --f-data: #dde3ee; --line-a: 0.13;
-  --exec: #4ade80; --exec-soft: rgba(74,222,128,.15); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
+  --exec: #4ade80; --exec-soft: rgba(74,222,128,.22); --chg: #fb923c; --chg-soft: rgba(251,146,60,.17); --rd-soft: rgba(110,162,255,.16);
   --spec-bg: #2a2540; --spec-border: #3d3560; --spec-name: #b9a2ff;
 }
 
@@ -266,6 +266,7 @@ footer .sep { opacity: .5; }
 .pane-head.sub { height: 30px; flex: 0 0 30px; border-top: 0; }
 .pane-head.sub .tab { height: 30px; }
 .tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--chg); margin-left: 5px; vertical-align: middle; }
+.tab .dot[hidden] { display: none; }
 table.rmem { border-collapse: collapse; width: 100%; font-size: 13px; font-family: ui-monospace, Menlo, Consolas, monospace; }
 table.rmem th { position: sticky; top: 0; z-index: 1; background: var(--panel-2); color: var(--muted); font-weight: 600; text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); font-family: system-ui, sans-serif; font-size: 12px; white-space: nowrap; }
 table.rmem td { padding: 1px 8px; height: 22px; white-space: nowrap; border-bottom: 1px solid color-mix(in srgb, var(--border) 45%, transparent); transition: background-color .25s; }
@@ -302,7 +303,7 @@ table.rmem tr.gap td { color: var(--muted); text-align: center; height: 18px; fo
 .console .used { color: var(--muted); font-size: 12px; }
 .sim-empty { padding: 30px 20px; text-align: center; color: var(--muted); }
 /* current instruction in the editor and the assembly table */
-.code .l.exec { box-shadow: inset 3px 0 0 var(--exec); background-image: linear-gradient(var(--exec-soft), var(--exec-soft)); }
+.code .l.exec { box-shadow: inset 4px 0 0 var(--exec), inset 0 0 0 1px var(--exec); background-image: linear-gradient(var(--exec-soft), var(--exec-soft)); }
 .gutter .g.exec { color: var(--exec); font-weight: 700; }
 table.mem tr.row.exec td { background-image: linear-gradient(var(--exec-soft), var(--exec-soft)); }
 table.mem tr.row.exec td:first-child { box-shadow: inset 3px 0 0 var(--exec); }
